@@ -1,4 +1,5 @@
 
+import { createClient } from '@supabase/supabase-js';
 import { ClientRecord } from '../types';
 
 export interface SupabaseConfig {
@@ -6,28 +7,35 @@ export interface SupabaseConfig {
   key: string;
 }
 
+// Inicializar cliente Global caso as variáveis existam
+const globalUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+export const supabase = globalUrl && globalKey
+  ? createClient(globalUrl, globalKey)
+  : null;
+
 export const supabaseService = {
   // Busca todos os clientes do Supabase
-  fetchClients: async (config: SupabaseConfig): Promise<ClientRecord[]> => {
-    if (!config.url || !config.key) return [];
-    
-    const url = `${config.url}/rest/v1/clients?select=*`;
-    
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'apikey': config.key,
-          'Authorization': `Bearer ${config.key}`,
-          'Content-Type': 'application/json'
-        }
-      });
+  fetchClients: async (config?: SupabaseConfig): Promise<ClientRecord[]> => {
+    // Tenta usar o cliente global primeiro, senão usa o `config` (caso exista)
+    const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
 
-      if (!response.ok) {
-        throw new Error('Falha ao buscar dados do Supabase');
+    if (!client) {
+      console.warn('Supabase não configurado. Fallback para banco local será ativado.');
+      return [];
+    }
+
+    try {
+      const { data, error } = await client
+        .from('clients')
+        .select('*');
+
+      if (error) {
+        throw new Error(error.message);
       }
 
-      return await response.json();
+      return data as ClientRecord[];
     } catch (error) {
       console.error('Erro Supabase Fetch:', error);
       throw error;
@@ -35,27 +43,18 @@ export const supabaseService = {
   },
 
   // Salva (Upsert) múltiplos clientes no Supabase
-  saveClients: async (config: SupabaseConfig, clients: ClientRecord[]): Promise<void> => {
-    if (!config.url || !config.key) return;
+  saveClients: async (config: SupabaseConfig | null, clients: ClientRecord[]): Promise<void> => {
+    const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
 
-    const url = `${config.url}/rest/v1/clients`;
+    if (!client) return;
 
     try {
-      // Upsert: insere novos ou atualiza existentes baseados na Primary Key 'id'
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'apikey': config.key,
-          'Authorization': `Bearer ${config.key}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify(clients)
-      });
+      const { error } = await client
+        .from('clients')
+        .upsert(clients, { onConflict: 'id' });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Erro ao salvar no Supabase');
+      if (error) {
+        throw new Error(error.message || 'Erro ao salvar no Supabase');
       }
     } catch (error) {
       console.error('Erro Supabase Save:', error);

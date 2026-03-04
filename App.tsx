@@ -61,14 +61,9 @@ const App: React.FC = () => {
   });
 
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const [sbConfig, setSbConfig] = useState<SupabaseConfig>(() => {
-    // Primeiro tenta ler as variáveis de ambiente (Vite)
-    const envUrl = import.meta.env.VITE_SUPABASE_URL;
-    const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    if (envUrl && envKey) {
-      return { url: envUrl, key: envKey };
-    }
-    // Fallback: Tenta ler as credenciais do localStorage
+  // O SupabaseService agora lida com o VITE_ENV globalmente, não precisamos mais do estado complexo.
+  // Mantemos sBConfig para fallback retrocompatibilidade apenas
+  const [sbConfig] = useState<SupabaseConfig>(() => {
     const saved = localStorage.getItem(SUPABASE_CONFIG_KEY);
     return saved ? JSON.parse(saved) : { url: '', key: '' };
   });
@@ -78,15 +73,14 @@ const App: React.FC = () => {
       setIsLoading(true);
       setLoadingMsg('Conectando à nuvem...');
       try {
-        if (sbConfig.url && sbConfig.key) {
-          const cloudData = await supabaseService.fetchClients(sbConfig);
-          if (cloudData && cloudData.length > 0) {
-            setClientData(cloudData);
-            setDataSource('SUPABASE');
-            await dbService.saveClients(cloudData);
-            setIsLoading(false);
-            return;
-          }
+        // Tenta buscar da Nuvem (o service já gerencia as credenciais globais e locais)
+        const cloudData = await supabaseService.fetchClients(sbConfig);
+        if (cloudData && cloudData.length > 0) {
+          setClientData(cloudData);
+          setDataSource('SUPABASE');
+          await dbService.saveClients(cloudData); // Salva cópia local para modo offline
+          setIsLoading(false);
+          return;
         }
 
         const dbData = await dbService.getAllClients();
@@ -319,13 +313,16 @@ const App: React.FC = () => {
         if (newRecords.length > 0) {
           await dbService.saveClients(newRecords);
           setClientData(newRecords);
-          if (sbConfig.url && sbConfig.key) {
-            setLoadingMsg('Sincronizando Nuvem...');
+
+          try {
+            setLoadingMsg('Sincronizando Nuvem Master...');
             await supabaseService.saveClients(sbConfig, newRecords);
             setDataSource('SUPABASE');
-          } else {
+          } catch (e) {
+            console.warn("Falha ao sincronizar nuvem, usando apenas Local.", e);
             setDataSource('LOCAL_DB');
           }
+
           alert(`${newRecords.length} clientes importados com sucesso! Verifique se todos os 39 estão na lista.`);
         } else {
           alert('Nenhum dado válido de cliente encontrado no arquivo.');
