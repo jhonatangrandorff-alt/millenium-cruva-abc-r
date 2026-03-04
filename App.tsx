@@ -66,6 +66,21 @@ const App: React.FC = () => {
         if (users && users.length > 0) {
           setUserAccounts(users);
           localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(users));
+
+          // Ensure the currently logged-in user's permissions are fully up-to-date
+          if (userName && userName !== 'geral') {
+            const activeDbUser = users.find(u => u.username === userName);
+            if (activeDbUser && JSON.stringify(activeDbUser.sectors) !== JSON.stringify(userSectors)) {
+              setUserSectors(activeDbUser.sectors);
+              localStorage.setItem(USER_SECTORS_KEY, JSON.stringify(activeDbUser.sectors));
+            } else if (!activeDbUser) {
+              // Optionally log out if the user was deleted globally
+              setUserSectors(null);
+              setUserName(null);
+              localStorage.removeItem(USER_SECTORS_KEY);
+              localStorage.removeItem(USER_NAME_KEY);
+            }
+          }
         }
       } catch (err) {
         console.error("Erro ao carregar usuários da nuvem:", err);
