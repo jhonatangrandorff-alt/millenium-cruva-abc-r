@@ -29,11 +29,11 @@ const App: React.FC = () => {
   const [clientData, setClientData] = useState<ClientRecord[]>([]);
   const [dataSource, setDataSource] = useState<DataSource>('MOCK');
   const [userSectors, setUserSectors] = useState<string[] | null>(() => {
-    const saved = localStorage.getItem(USER_SECTORS_KEY);
+    const saved = sessionStorage.getItem(USER_SECTORS_KEY);
     return saved ? JSON.parse(saved) : null;
   });
   const [userName, setUserName] = useState<string | null>(() => {
-    return localStorage.getItem(USER_NAME_KEY);
+    return sessionStorage.getItem(USER_NAME_KEY);
   });
 
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
@@ -72,13 +72,13 @@ const App: React.FC = () => {
             const activeDbUser = users.find(u => u.username === userName);
             if (activeDbUser && JSON.stringify(activeDbUser.sectors) !== JSON.stringify(userSectors)) {
               setUserSectors(activeDbUser.sectors);
-              localStorage.setItem(USER_SECTORS_KEY, JSON.stringify(activeDbUser.sectors));
+              sessionStorage.setItem(USER_SECTORS_KEY, JSON.stringify(activeDbUser.sectors));
             } else if (!activeDbUser) {
               // Optionally log out if the user was deleted globally
               setUserSectors(null);
               setUserName(null);
-              localStorage.removeItem(USER_SECTORS_KEY);
-              localStorage.removeItem(USER_NAME_KEY);
+              sessionStorage.removeItem(USER_SECTORS_KEY);
+              sessionStorage.removeItem(USER_NAME_KEY);
             }
           }
         }
@@ -131,15 +131,15 @@ const App: React.FC = () => {
   }, [activeTab]);
 
   const handleLogin = (sectors: string[], username: string) => {
-    localStorage.setItem(USER_SECTORS_KEY, JSON.stringify(sectors));
-    localStorage.setItem(USER_NAME_KEY, username);
+    sessionStorage.setItem(USER_SECTORS_KEY, JSON.stringify(sectors));
+    sessionStorage.setItem(USER_NAME_KEY, username);
     setUserSectors(sectors);
     setUserName(username);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(USER_SECTORS_KEY);
-    localStorage.removeItem(USER_NAME_KEY);
+    sessionStorage.removeItem(USER_SECTORS_KEY);
+    sessionStorage.removeItem(USER_NAME_KEY);
     setUserSectors(null);
     setUserName(null);
   };
