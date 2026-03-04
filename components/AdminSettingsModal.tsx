@@ -19,9 +19,11 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   onSave
 }) => {
   const [accounts, setAccounts] = useState<UserAccount[]>(userAccounts);
-  // Keep accounts in sync if props change (e.g., loaded from cloud)
   useEffect(() => {
-    setAccounts(userAccounts);
+    // Only update if we have new data from parent and we haven't modified it locally yet
+    if (userAccounts.length !== accounts.length || accounts.length === 0) {
+      setAccounts(userAccounts);
+    }
   }, [userAccounts]);
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -75,14 +77,14 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
       // Save directly to Supabase
       await supabaseService.saveUser(null, newUser);
 
-      const updatedAccounts = [...accounts, newUser];
-      setAccounts(updatedAccounts);
+      setAccounts(prev => {
+        const next = [...prev, newUser];
+        onSave(next);
+        return next;
+      });
       setNewUsername('');
       setNewPassword('');
       setNewSectors(['GERAL']);
-
-      // Update the parent component's state right away
-      onSave(updatedAccounts);
     } catch (err: any) {
       alert('Erro ao salvar usuário na nuvem: ' + err.message);
     }
@@ -91,10 +93,11 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   const removeUser = async (id: string) => {
     try {
       await supabaseService.deleteUser(null, id);
-      const updatedAccounts = accounts.filter(a => a.id !== id);
-      setAccounts(updatedAccounts);
-      // Update the parent component's state right away
-      onSave(updatedAccounts);
+      setAccounts(prev => {
+        const next = prev.filter(a => a.id !== id);
+        onSave(next);
+        return next;
+      });
     } catch (err: any) {
       alert('Erro ao excluir usuário da nuvem: ' + err.message);
     }
