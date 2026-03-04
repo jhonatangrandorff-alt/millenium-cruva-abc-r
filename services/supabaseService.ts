@@ -32,15 +32,33 @@ export const supabaseService = {
     }
 
     try {
-      const { data, error } = await client
-        .from('clients')
-        .select('*');
+      let allData: ClientRecord[] = [];
+      let start = 0;
+      const step = 1000;
+      let hasMore = true;
 
-      if (error) {
-        throw new Error(error.message);
+      while (hasMore) {
+        const { data, error } = await client
+          .from('clients')
+          .select('*')
+          .range(start, start + step - 1);
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (data && data.length > 0) {
+          allData = [...allData, ...data as ClientRecord[]];
+          start += step;
+          if (data.length < step) {
+            hasMore = false; // Última página
+          }
+        } else {
+          hasMore = false;
+        }
       }
 
-      return data as ClientRecord[];
+      return allData;
     } catch (error) {
       console.error('Erro Supabase Fetch:', error);
       throw error;
