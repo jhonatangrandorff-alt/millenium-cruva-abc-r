@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { ClientRecord } from '../types';
+import { ClientRecord, UserAccount } from '../types';
 
 export interface SupabaseConfig {
   url: string;
@@ -86,6 +86,57 @@ export const supabaseService = {
       }
     } catch (error) {
       console.error('Erro Supabase Save:', error);
+      throw error;
+    }
+  },
+
+  fetchUsers: async (config?: SupabaseConfig): Promise<UserAccount[]> => {
+    const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
+    if (!client) {
+      console.warn('⚠️ Supabase não configurado. Fallback inativo.');
+      return [];
+    }
+    try {
+      const { data, error } = await client
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw new Error(error.message);
+      return (data || []) as UserAccount[];
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error);
+      return [];
+    }
+  },
+
+  saveUser: async (config: SupabaseConfig | null, user: UserAccount): Promise<void> => {
+    const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
+    if (!client) return;
+    try {
+      const { error } = await client
+        .from('users')
+        .upsert(user, { onConflict: 'username' });
+
+      if (error) throw new Error(error.message);
+    } catch (error) {
+      console.error('Erro ao salvar usuário:', error);
+      throw error;
+    }
+  },
+
+  deleteUser: async (config: SupabaseConfig | null, id: string): Promise<void> => {
+    const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
+    if (!client) return;
+    try {
+      const { error } = await client
+        .from('users')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw new Error(error.message);
+    } catch (error) {
+      console.error('Erro ao excluir usuário:', error);
       throw error;
     }
   }

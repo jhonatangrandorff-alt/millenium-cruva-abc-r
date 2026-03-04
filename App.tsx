@@ -59,6 +59,21 @@ const App: React.FC = () => {
     }
   });
 
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await supabaseService.fetchUsers();
+        if (users && users.length > 0) {
+          setUserAccounts(users);
+          localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(users));
+        }
+      } catch (err) {
+        console.error("Erro ao carregar usuários da nuvem:", err);
+      }
+    };
+    loadUsers();
+  }, []);
+
   const [showAdminModal, setShowAdminModal] = useState(false);
   // Configuração Local obsoleto, removido para forçar Nuvem.
   const [sbConfig] = useState<SupabaseConfig>(() => ({ url: '', key: '' }));

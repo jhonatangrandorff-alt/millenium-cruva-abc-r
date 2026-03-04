@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserAccount } from '../types';
+import { supabaseService } from '../services/supabaseService';
 
 interface AdminSettingsModalProps {
   isOpen: boolean;
@@ -10,14 +11,19 @@ interface AdminSettingsModalProps {
   onSave: (accounts: UserAccount[]) => void;
 }
 
-const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  supervisors, 
-  userAccounts, 
-  onSave 
+const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
+  isOpen,
+  onClose,
+  supervisors,
+  userAccounts,
+  onSave
 }) => {
   const [accounts, setAccounts] = useState<UserAccount[]>(userAccounts);
+  // Keep accounts in sync if props change (e.g., loaded from cloud)
+  useEffect(() => {
+    setAccounts(userAccounts);
+  }, [userAccounts]);
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminPass, setAdminPass] = useState('');
   const [error, setError] = useState('');
@@ -49,7 +55,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
     });
   };
 
-  const addUser = () => {
+  const addUser = async () => {
     if (!newUsername || !newPassword) {
       alert('Preencha o usuário e a senha.');
       return;
@@ -64,18 +70,37 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
       password: newPassword,
       sectors: newSectors
     };
-    setAccounts([...accounts, newUser]);
-    setNewUsername('');
-    setNewPassword('');
-    setNewSectors(['GERAL']);
+
+    try {
+      // Save directly to Supabase
+      await supabaseService.saveUser(null, newUser);
+
+      const updatedAccounts = [...accounts, newUser];
+      setAccounts(updatedAccounts);
+      setNewUsername('');
+      setNewPassword('');
+      setNewSectors(['GERAL']);
+
+      // Update the parent component's state right away
+      onSave(updatedAccounts);
+    } catch (err: any) {
+      alert('Erro ao salvar usuário na nuvem: ' + err.message);
+    }
   };
 
-  const removeUser = (id: string) => {
-    setAccounts(accounts.filter(a => a.id !== id));
+  const removeUser = async (id: string) => {
+    try {
+      await supabaseService.deleteUser(null, id);
+      const updatedAccounts = accounts.filter(a => a.id !== id);
+      setAccounts(updatedAccounts);
+      // Update the parent component's state right away
+      onSave(updatedAccounts);
+    } catch (err: any) {
+      alert('Erro ao excluir usuário da nuvem: ' + err.message);
+    }
   };
 
   const handleSave = () => {
-    onSave(accounts);
     onClose();
   };
 
@@ -99,12 +124,12 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
             <h3 className="text-lg font-bold text-blue-900 mb-4">Acesso Restrito</h3>
             <p className="text-gray-500 mb-6">Insira a senha do Supervisor Geral para gerenciar os usuários.</p>
             <form onSubmit={handleAuth} className="space-y-4">
-              <input 
-                type="password" 
-                value={adminPass} 
-                onChange={e => setAdminPass(e.target.value)} 
-                className="w-full border p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" 
-                placeholder="Senha Admin" 
+              <input
+                type="password"
+                value={adminPass}
+                onChange={e => setAdminPass(e.target.value)}
+                className="w-full border p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Senha Admin"
               />
               {error && <p className="text-red-500 text-sm">{error}</p>}
               <button type="submit" className="w-full bg-blue-900 text-white py-4 rounded-2xl font-bold hover:bg-blue-800 transition-all">
@@ -120,33 +145,33 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                   <i className="fas fa-user-plus"></i> Cadastrar Novo Usuário
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input 
-                    type="text" 
-                    value={newUsername} 
-                    onChange={e => setNewUsername(e.target.value)} 
-                    placeholder="Usuário" 
+                  <input
+                    type="text"
+                    value={newUsername}
+                    onChange={e => setNewUsername(e.target.value)}
+                    placeholder="Usuário"
                     className="p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <input 
-                    type="password" 
-                    value={newPassword} 
-                    onChange={e => setNewPassword(e.target.value)} 
-                    placeholder="Senha" 
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Senha"
                     className="p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                
+
                 <div className="mt-4">
                   <label className="block text-xs font-bold text-blue-900 uppercase mb-2">Acesso aos Setores (Selecione um ou mais)</label>
                   <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 bg-white border rounded-xl">
-                    <button 
+                    <button
                       onClick={() => toggleSector('GERAL')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${newSectors.includes('GERAL') ? 'bg-blue-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                     >
                       GERAL (Todos)
                     </button>
                     {supervisors.filter(s => s !== 'GERAL' && s !== '').map(s => (
-                      <button 
+                      <button
                         key={s}
                         onClick={() => toggleSector(s)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${newSectors.includes(s) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
@@ -157,7 +182,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={addUser}
                   className="mt-4 w-full bg-blue-900 text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition-all"
                 >
@@ -187,7 +212,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="text-xs font-mono bg-gray-50 px-2 py-1 rounded border text-gray-400">••••••</span>
-                        <button 
+                        <button
                           onClick={() => removeUser(acc.id)}
                           className="text-red-400 hover:text-red-600 p-2 transition-colors"
                           title="Remover Usuário"
@@ -201,7 +226,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
               </div>
             </div>
             <div className="p-6 bg-gray-50 border-t border-gray-200">
-              <button 
+              <button
                 onClick={handleSave}
                 className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg"
               >
