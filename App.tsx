@@ -15,7 +15,6 @@ type Tab = 'representative' | 'city' | 'supervisor';
 type DataSource = 'MOCK' | 'LOCAL_DB' | 'SUPABASE';
 
 const TAB_STORAGE_KEY = 'MILLENIUM_PREF_ACTIVE_TAB';
-const SUPABASE_CONFIG_KEY = 'MILLENIUM_SUPABASE_CONFIG';
 const USER_SECTORS_KEY = 'MILLENIUM_USER_SECTORS';
 const USER_NAME_KEY = 'MILLENIUM_USER_NAME';
 const USER_ACCOUNTS_KEY = 'MILLENIUM_USER_ACCOUNTS';
@@ -61,12 +60,8 @@ const App: React.FC = () => {
   });
 
   const [showAdminModal, setShowAdminModal] = useState(false);
-  // O SupabaseService agora lida com o VITE_ENV globalmente, não precisamos mais do estado complexo.
-  // Mantemos sBConfig para fallback retrocompatibilidade apenas
-  const [sbConfig] = useState<SupabaseConfig>(() => {
-    const saved = localStorage.getItem(SUPABASE_CONFIG_KEY);
-    return saved ? JSON.parse(saved) : { url: '', key: '' };
-  });
+  // Configuração Local obsoleto, removido para forçar Nuvem.
+  const [sbConfig] = useState<SupabaseConfig>(() => ({ url: '', key: '' }));
 
   useEffect(() => {
     const loadData = async () => {
