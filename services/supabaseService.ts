@@ -41,6 +41,7 @@ export const supabaseService = {
         const { data, error } = await client
           .from('clients')
           .select('*')
+          .order('id', { ascending: true })
           .range(start, start + step - 1);
 
         if (error) {
