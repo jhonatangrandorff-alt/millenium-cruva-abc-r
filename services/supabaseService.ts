@@ -35,6 +35,12 @@ const sanitizeClient = (client: any) => {
       sanitized[col] = client[col];
     }
   });
+
+  // Garantir que socialName nunca seja null para evitar erro de constraint no banco
+  if (!sanitized.socialName) {
+    sanitized.socialName = sanitized.fantasyName || sanitized.id || 'NOME NAO INFORMADO';
+  }
+
   return sanitized;
 };
 

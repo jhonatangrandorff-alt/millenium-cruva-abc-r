@@ -110,8 +110,9 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
     const filtered = data.filter(item => {
       const itemKey = `${item.city} - ${item.state}`;
       const matchCity = itemKey === selectedCity;
-      const matchDate = item.lastPurchaseDate >= startDate && item.lastPurchaseDate <= endDate;
-      return matchCity && matchDate;
+      // A data não deve ter correlação para filtro conforme solicitado
+      // const matchDate = item.lastPurchaseDate >= startDate && item.lastPurchaseDate <= endDate;
+      return matchCity;
     });
 
     // 2. Group by Representative (Using rep3 now)

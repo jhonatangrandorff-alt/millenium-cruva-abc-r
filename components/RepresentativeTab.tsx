@@ -107,10 +107,10 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
     // 1. Filter by Rep3 and Date
     const filtered = data.filter(item => {
       const matchRep = item.rep3 === selectedRep; // Using rep3
-      const matchDate = item.lastPurchaseDate >= startDate && item.lastPurchaseDate <= endDate;
-      // Filter now includes both ACTIVE and SEMI_ACTIVE
+      // A data não deve ter correlação para filtro conforme solicitado
+      // const matchDate = item.lastPurchaseDate >= startDate && item.lastPurchaseDate <= endDate;
       const isPositive = item.status === ClientStatus.ACTIVE || item.status === ClientStatus.SEMI_ACTIVE; 
-      return matchRep && matchDate && isPositive;
+      return matchRep && isPositive;
     });
 
     // 2. Group by City

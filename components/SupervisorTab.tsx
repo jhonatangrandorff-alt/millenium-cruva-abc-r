@@ -103,8 +103,9 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
     // 1. Filter by Supervisor and Date
     const filtered = data.filter(item => {
       const matchSup = item.supervisor === selectedSupervisor;
-      const matchDate = item.lastPurchaseDate >= startDate && item.lastPurchaseDate <= endDate;
-      return matchSup && matchDate;
+      // A data não deve ter correlação para filtro conforme solicitado
+      // const matchDate = item.lastPurchaseDate >= startDate && item.lastPurchaseDate <= endDate;
+      return matchSup;
     });
 
     // 2. Group by Representative (Using rep3 now)
