@@ -20,6 +20,24 @@ export const supabase = globalUrl && globalKey
   ? createClient(globalUrl, globalKey)
   : null;
 
+// Campos que existem na tabela 'clients' do Supabase para evitar erro de coluna inexistente
+const VALID_CLIENT_COLUMNS = [
+  'id', 'socialName', 'fantasyName', 'cnpj', 'ie', 'city', 'state', 
+  'address', 'neighborhood', 'cep', 'activity', 'group', 
+  'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
+  'representativeName', 'rep3', 'supervisor', 'population', 'status'
+];
+
+const sanitizeClient = (client: any) => {
+  const sanitized: any = {};
+  VALID_CLIENT_COLUMNS.forEach(col => {
+    if (client[col] !== undefined) {
+      sanitized[col] = client[col];
+    }
+  });
+  return sanitized;
+};
+
 export const supabaseService = {
   // Busca todos os clientes do Supabase
   fetchClients: async (config?: SupabaseConfig): Promise<ClientRecord[]> => {
@@ -72,19 +90,24 @@ export const supabaseService = {
     const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
 
     if (!client) {
-      console.error("Tentativa de salvar na Nuvem falhou pois o Cliente Supabase é Null. Variáveis de ambiente falharam.");
-      return;
+      const errorMsg = "Não foi possível inicializar o cliente Supabase. Verifique se as variáveis de ambiente (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY) estão configuradas corretamente.";
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
 
     try {
+      // Sanitiza os dados para enviar apenas colunas válidas
+      const sanitizedClients = clients.map(sanitizeClient);
+
       const { error } = await client
         .from('clients')
-        .upsert(clients, { onConflict: 'id' });
+        .upsert(sanitizedClients, { onConflict: 'id' });
 
       if (error) {
+        console.error('Erro retornado pelo Supabase:', error);
         throw new Error(error.message || 'Erro ao salvar no Supabase');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro Supabase Save:', error);
       throw error;
     }

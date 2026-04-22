@@ -339,16 +339,21 @@ const App: React.FC = () => {
           await dbService.saveClients(newRecords);
           setClientData(newRecords);
 
+          let cloudSyncSuccess = false;
           try {
             setLoadingMsg('Sincronizando Nuvem Master...');
             await supabaseService.saveClients(sbConfig, newRecords);
             setDataSource('SUPABASE');
-          } catch (e) {
+            cloudSyncSuccess = true;
+          } catch (e: any) {
             console.warn("Falha ao sincronizar nuvem, usando apenas Local.", e);
             setDataSource('LOCAL_DB');
+            alert(`Atenção: Os dados foram salvos LOCALMENTE, mas houve um erro ao sincronizar com a Nuvem:\n${e.message}\n\nIsso significa que outras pessoas não verão essas atualizações até que o erro seja resolvido.`);
           }
 
-          alert(`${newRecords.length} clientes importados com sucesso! Verifique se todos os 39 estão na lista.`);
+          if (cloudSyncSuccess) {
+            alert(`${newRecords.length} clientes importados e sincronizados na NUVEM com sucesso!`);
+          }
         } else {
           alert('Nenhum dado válido de cliente encontrado no arquivo.');
         }
