@@ -90,7 +90,7 @@ export const supabaseService = {
     }
   },
 
-  // Salva (Upsert) múltiplos clientes no Supabase
+  // Salva (Upsert) múltiplos clientes no Supabase em lotes
   saveClients: async (config: SupabaseConfig | null, clients: ClientRecord[]): Promise<void> => {
     // Mesma lógica: Global primeiro
     const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
@@ -105,13 +105,19 @@ export const supabaseService = {
       // Sanitiza os dados para enviar apenas colunas válidas
       const sanitizedClients = clients.map(sanitizeClient);
 
-      const { error } = await client
-        .from('clients')
-        .upsert(sanitizedClients, { onConflict: 'id' });
+      // Processar em lotes para evitar erro de payload muito grande ou timeout
+      const BATCH_SIZE = 1000;
+      for (let i = 0; i < sanitizedClients.length; i += BATCH_SIZE) {
+        const batch = sanitizedClients.slice(i, i + BATCH_SIZE);
+        
+        const { error } = await client
+          .from('clients')
+          .upsert(batch, { onConflict: 'id' });
 
-      if (error) {
-        console.error('Erro retornado pelo Supabase:', error);
-        throw new Error(error.message || 'Erro ao salvar no Supabase');
+        if (error) {
+          console.error(`Erro ao salvar lote (${i} a ${i + batch.length}):`, error);
+          throw new Error(error.message || 'Erro ao salvar no Supabase');
+        }
       }
     } catch (error: any) {
       console.error('Erro Supabase Save:', error);
