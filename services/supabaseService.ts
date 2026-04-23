@@ -58,7 +58,7 @@ export const supabaseService = {
     try {
       let allData: ClientRecord[] = [];
       let start = 0;
-      const step = 1000;
+      const step = 500;
       let hasMore = true;
 
       while (hasMore) {
@@ -77,6 +77,9 @@ export const supabaseService = {
           start += step;
           if (data.length < step) {
             hasMore = false; // Última página
+          } else {
+            // Pequena pausa para evitar timeout no banco em tabelas gigantes
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
         } else {
           hasMore = false;
