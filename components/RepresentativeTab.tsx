@@ -104,14 +104,8 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
   const tableData = useMemo(() => {
     if (!selectedRep) return [];
 
-    // 1. Filter by Rep3 and Date
-    const filtered = data.filter(item => {
-      const matchRep = item.rep3 === selectedRep; // Using rep3
-      // A data não deve ter correlação para filtro conforme solicitado
-      // const matchDate = item.lastPurchaseDate >= startDate && item.lastPurchaseDate <= endDate;
-      const isPositive = item.status === ClientStatus.ACTIVE || item.status === ClientStatus.SEMI_ACTIVE; 
-      return matchRep && isPositive;
-    });
+    // 1. Filter by Rep3
+    const filtered = data.filter(item => item.rep3 === selectedRep);
 
     // 2. Group by City
     const cityMap = new Map<string, RepViewRow>();
@@ -122,12 +116,20 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
         cityMap.set(key, {
           city: item.city,
           state: item.state,
-          positiveCount: 0,
+          active: 0,
+          semiActive: 0,
+          inactive: 0,
+          total: 0,
           population: item.population
         });
       }
       const entry = cityMap.get(key)!;
-      entry.positiveCount += 1;
+      
+      if (item.status === ClientStatus.ACTIVE) entry.active++;
+      else if (item.status === ClientStatus.SEMI_ACTIVE) entry.semiActive++;
+      else if (item.status === ClientStatus.INACTIVE) entry.inactive++;
+      
+      entry.total++;
     });
 
     const rows = Array.from(cityMap.values());
@@ -141,15 +143,23 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [data, selectedRep, startDate, endDate, sortConfig]);
+  }, [data, selectedRep, sortConfig]);
 
-  const totalPositivated = tableData.reduce((acc, curr) => acc + curr.positiveCount, 0);
-  const totalPop = tableData.reduce((acc, curr) => acc + curr.population, 0);
+  const totals = tableData.reduce((acc, curr) => ({
+    active: acc.active + curr.active,
+    semi: acc.semi + curr.semiActive,
+    inactive: acc.inactive + curr.inactive,
+    total: acc.total + curr.total,
+    pop: acc.pop + curr.population
+  }), { active: 0, semi: 0, inactive: 0, total: 0, pop: 0 });
 
   const handleExport = () => {
     const csvData = tableData.map(row => ({
       'Cidade/UF': `${row.city} - ${row.state}`,
-      'Positivação (Ativos + Semi)': row.positiveCount,
+      'Ativo': row.active,
+      'Semi-ativo': row.semiActive,
+      'Inativo': row.inactive,
+      'Total': row.total,
       'Habitantes': row.population
     }));
     onExport(csvData, `Positivacao_${selectedRep}_${startDate}_${endDate}`);
@@ -276,10 +286,28 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                 Cidades/UF {renderSortIcon('city')}
               </th>
               <th 
-                className="text-right p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none"
-                onClick={() => handleSort('positiveCount')}
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-green-900/50"
+                onClick={() => handleSort('active')}
               >
-                Positivação (Ativo + Semi) {renderSortIcon('positiveCount')}
+                Ativo {renderSortIcon('active')}
+              </th>
+              <th 
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-orange-900/50"
+                onClick={() => handleSort('semiActive')}
+              >
+                Semi {renderSortIcon('semiActive')}
+              </th>
+              <th 
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-red-900/50"
+                onClick={() => handleSort('inactive')}
+              >
+                Inativo {renderSortIcon('inactive')}
+              </th>
+              <th 
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50"
+                onClick={() => handleSort('total')}
+              >
+                Total {renderSortIcon('total')}
               </th>
               <th 
                 className="text-right p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none"
@@ -308,17 +336,23 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                       <td className="p-3 px-4 font-medium text-gray-800">
                         {row.city} - {row.state}
                       </td>
-                      <td className="p-3 px-4 text-right">
-                        <button 
-                          onClick={() => onDrillDown({ 
-                            rep: selectedRep, 
-                            city: row.city,
-                            status: [ClientStatus.ACTIVE, ClientStatus.SEMI_ACTIVE] // Pass array for both
-                          })}
-                          className="inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full bg-blue-100 text-blue-800 font-bold text-xs hover:bg-blue-200 transition-colors"
-                        >
-                          {row.positiveCount}
-                        </button>
+                      <td className="p-3 px-4 text-center">
+                        {row.active > 0 ? (
+                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.ACTIVE })} className="px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-bold text-xs hover:bg-green-200">{row.active}</button>
+                        ) : "-"}
+                      </td>
+                      <td className="p-3 px-4 text-center">
+                        {row.semiActive > 0 ? (
+                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.SEMI_ACTIVE })} className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-bold text-xs hover:bg-orange-200">{row.semiActive}</button>
+                        ) : "-"}
+                      </td>
+                      <td className="p-3 px-4 text-center">
+                        {row.inactive > 0 ? (
+                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.INACTIVE })} className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-bold text-xs hover:bg-red-200">{row.inactive}</button>
+                        ) : "-"}
+                      </td>
+                      <td className="p-3 px-4 text-center font-bold">
+                        <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city })} className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200">{row.total}</button>
                       </td>
                       <td className="p-3 px-4 text-right text-gray-600">
                         {row.population.toLocaleString('pt-BR')}
@@ -337,19 +371,11 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           <tfoot className="sticky bottom-0 z-10">
             <tr className="bg-gray-100 text-gray-800 font-bold border-t-2 border-gray-300 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
               <td className="p-4">Total Geral</td>
-              <td className="p-4 text-right">
-                <button 
-                  onClick={() => onDrillDown({ 
-                      rep: selectedRep, 
-                      status: [ClientStatus.ACTIVE, ClientStatus.SEMI_ACTIVE] 
-                  })}
-                  className="px-3 py-1 rounded-full bg-blue-200 text-blue-900 hover:bg-blue-300 transition-colors"
-                  disabled={!selectedRep}
-                >
-                  {totalPositivated}
-                </button>
-              </td>
-              <td className="p-4 text-right">{totalPop.toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-center bg-green-50">{totals.active}</td>
+              <td className="p-4 text-center bg-orange-50">{totals.semi}</td>
+              <td className="p-4 text-center bg-red-50">{totals.inactive}</td>
+              <td className="p-4 text-center bg-blue-50">{totals.total}</td>
+              <td className="p-4 text-right">{totals.pop.toLocaleString('pt-BR')}</td>
             </tr>
           </tfoot>
         </table>
