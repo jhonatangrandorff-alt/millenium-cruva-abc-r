@@ -106,7 +106,8 @@ export const supabaseService = {
       const sanitizedClients = clients.map(sanitizeClient);
 
       // Processar em lotes para evitar erro de payload muito grande ou timeout
-      const BATCH_SIZE = 1000;
+      // Reduzido para 200 para maior estabilidade em tabelas grandes
+      const BATCH_SIZE = 200;
       for (let i = 0; i < sanitizedClients.length; i += BATCH_SIZE) {
         const batch = sanitizedClients.slice(i, i + BATCH_SIZE);
         
@@ -117,6 +118,11 @@ export const supabaseService = {
         if (error) {
           console.error(`Erro ao salvar lote (${i} a ${i + batch.length}):`, error);
           throw new Error(error.message || 'Erro ao salvar no Supabase');
+        }
+
+        // Pequeno intervalo para dar fôlego ao banco de dados em processamentos longos
+        if (sanitizedClients.length > BATCH_SIZE) {
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
     } catch (error: any) {
