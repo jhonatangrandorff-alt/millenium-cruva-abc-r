@@ -7,25 +7,18 @@ export interface SupabaseConfig {
   key: string;
 }
 
-// Inicializar cliente Global caso as variáveis existam
-const globalUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Inicializar cliente Global com chaves de produção (Blindagem de Conexão)
+const globalUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nqrtrzfkryihlllzdlgw.supabase.co';
+const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xcnRyemZrcnlpaGxsbHpkbGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0ODEyODQsImV4cCI6MjA4ODA1NzI4NH0.al_gpeQjLms0T1op8UyhdtaN7PJAaHxWGFPIx0ZJM_8';
 
-if (import.meta.env.DEV) {
-  console.log('[Supabase Diagnostic] VITE_SUPABASE_URL:', globalUrl ? 'DEFINIDA' : 'VAZIA');
-  console.log('[Supabase Diagnostic] VITE_SUPABASE_ANON_KEY:', globalKey ? 'DEFINIDA' : 'VAZIA');
-}
-
-export const supabase = globalUrl && globalKey
-  ? createClient(globalUrl, globalKey)
-  : null;
+export const supabase = createClient(globalUrl, globalKey);
 
 // Campos que existem na tabela 'clients' do Supabase para evitar erro de coluna inexistente
 const VALID_CLIENT_COLUMNS = [
   'id', 'socialName', 'fantasyName', 'cnpj', 'ie', 'city', 'state', 
   'address', 'neighborhood', 'cep', 'activity', 'group', 
   'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
-  'representativeName', 'rep3', 'supervisor', 'population', 'status'
+  'representativeName', 'rep3', 'supervisor', 'population', 'status', 'abc'
 ];
 
 const sanitizeClient = (client: any) => {
@@ -47,7 +40,6 @@ const sanitizeClient = (client: any) => {
 export const supabaseService = {
   // Busca todos os clientes do Supabase
   fetchClients: async (config?: SupabaseConfig): Promise<ClientRecord[]> => {
-    // A PRIORIDADE MÁXIMA É A INSTÂNCIA GLOBAL (VITE_ENV). Só usa o `config` se o env falhar.
     const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
 
     if (!client) {
@@ -56,34 +48,43 @@ export const supabaseService = {
     }
 
     try {
+      // 1. Obter o total de registros primeiro (muito rápido)
+      const { count, error: countError } = await client
+        .from('base_oficial_millenium')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) throw new Error(countError.message);
+      
+      const total = count || 0;
+      if (total === 0) return [];
+
+      const step = 1000; // Blocos maiores para reduzir número de requisições
+      const pages = Math.ceil(total / step);
       let allData: ClientRecord[] = [];
-      let start = 0;
-      const step = 500;
-      let hasMore = true;
-
-      while (hasMore) {
-        const { data, error } = await client
-          .from('clients')
-          .select('*')
-          .order('id', { ascending: true })
-          .range(start, start + step - 1);
-
-        if (error) {
-          throw new Error(error.message);
+      
+      // 2. Buscar páginas em paralelo com limite de concorrência
+      const CONCURRENCY_LIMIT = 5;
+      for (let i = 0; i < pages; i += CONCURRENCY_LIMIT) {
+        const batchPromises = [];
+        for (let j = i; j < Math.min(i + CONCURRENCY_LIMIT, pages); j++) {
+          const start = j * step;
+          const end = start + step - 1;
+          batchPromises.push(
+            client
+              .from('base_oficial_millenium')
+              .select('*')
+              .range(start, end)
+              .then(({ data, error }) => {
+                if (error) throw error;
+                return data as ClientRecord[];
+              })
+          );
         }
-
-        if (data && data.length > 0) {
-          allData = [...allData, ...data as ClientRecord[]];
-          start += step;
-          if (data.length < step) {
-            hasMore = false; // Última página
-          } else {
-            // Pequena pausa para evitar timeout no banco em tabelas gigantes
-            await new Promise(resolve => setTimeout(resolve, 50));
-          }
-        } else {
-          hasMore = false;
-        }
+        
+        const results = await Promise.all(batchPromises);
+        results.forEach(data => {
+          allData = [...allData, ...data];
+        });
       }
 
       return allData;
@@ -93,40 +94,35 @@ export const supabaseService = {
     }
   },
 
-  // Salva (Upsert) múltiplos clientes no Supabase em lotes
   saveClients: async (config: SupabaseConfig | null, clients: ClientRecord[]): Promise<void> => {
-    // Mesma lógica: Global primeiro
     const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
 
     if (!client) {
-      const errorMsg = "Não foi possível inicializar o cliente Supabase. Verifique se as variáveis de ambiente (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY) estão configuradas corretamente.";
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new Error("Não foi possível inicializar o cliente Supabase.");
     }
 
+    const BATCH_SIZE = 150;
+    const CONCURRENCY = 3; // Envia 3 lotes simultâneos
+    
     try {
-      // Sanitiza os dados para enviar apenas colunas válidas
-      const sanitizedClients = clients.map(sanitizeClient);
+      const chunks = [];
+      for (let i = 0; i < clients.length; i += BATCH_SIZE) {
+        chunks.push(clients.slice(i, i + BATCH_SIZE).map(sanitizeClient));
+      }
 
-      // Processar em lotes para evitar erro de payload muito grande ou timeout
-      // Reduzido para 200 para maior estabilidade em tabelas grandes
-      const BATCH_SIZE = 200;
-      for (let i = 0; i < sanitizedClients.length; i += BATCH_SIZE) {
-        const batch = sanitizedClients.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+        const batch = chunks.slice(i, i + CONCURRENCY);
+        await Promise.all(batch.map(chunk => 
+          client
+            .from('base_oficial_millenium')
+            .upsert(chunk, { onConflict: 'id' })
+            .then(({ error }) => {
+              if (error) throw error;
+            })
+        ));
         
-        const { error } = await client
-          .from('clients')
-          .upsert(batch, { onConflict: 'id' });
-
-        if (error) {
-          console.error(`Erro ao salvar lote (${i} a ${i + batch.length}):`, error);
-          throw new Error(error.message || 'Erro ao salvar no Supabase');
-        }
-
-        // Pequeno intervalo para dar fôlego ao banco de dados em processamentos longos
-        if (sanitizedClients.length > BATCH_SIZE) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        // Pequena pausa para estabilidade
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     } catch (error: any) {
       console.error('Erro Supabase Save:', error);

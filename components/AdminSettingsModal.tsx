@@ -227,6 +227,34 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                   ))
                 )}
               </div>
+
+              <div className="mt-8 p-6 bg-red-50 rounded-2xl border border-red-100 mx-2">
+                <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2">
+                  <i className="fas fa-exclamation-triangle"></i> Zona de Perigo (Nova Base v5)
+                </h4>
+                <p className="text-xs text-red-600 mb-4">Esta ação apaga TODOS os dados da nuvem para permitir uma nova importação do zero.</p>
+                <button
+                  onClick={async () => {
+                    if (confirm("TEM CERTEZA? Isso apagará todos os clientes da nuvem permanentemente.")) {
+                      try {
+                        const { error } = await (supabaseService as any).supabase
+                          .from('base_oficial_millenium')
+                          .delete()
+                          .neq('id', '0'); 
+                        if (error) throw error;
+                        alert("Base de dados limpa com sucesso! Reiniciando...");
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert("Erro ao limpar base: " + err.message);
+                      }
+                    }
+                  }}
+                  className="w-full bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <i className="fas fa-trash"></i>
+                  LIMPAR TODA A BASE DE DADOS (RESET)
+                </button>
+              </div>
             </div>
             <div className="p-6 bg-gray-50 border-t border-gray-200">
               <button

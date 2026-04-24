@@ -56,6 +56,11 @@ export const generateMockData = (): ClientRecord[] => {
     const registerDate = new Date();
     registerDate.setFullYear(2010 + Math.floor(Math.random() * 10));
     
+    // Calculate ABC based on recency
+    let abc: 'A' | 'B' | 'C' = 'C';
+    if (daysAgo <= 30) abc = 'A';
+    else if (daysAgo <= 90) abc = 'B';
+
     data.push({
       id: (4000 + i).toString(),
       socialName: `CLIENTE TESTE ${i} LTDA`,
@@ -76,7 +81,8 @@ export const generateMockData = (): ClientRecord[] => {
       rep3: rep, // For mock data, rep3 is same as main rep
       supervisor: supervisor,
       population: cityObj.pop,
-      status: status
+      status: status,
+      abc: abc
     });
   }
   return data;

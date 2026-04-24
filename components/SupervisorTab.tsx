@@ -130,6 +130,10 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
       else if (item.status === ClientStatus.SEMI_ACTIVE) entry.semiActive++;
       else if (item.status === ClientStatus.INACTIVE) entry.inactive++;
       
+      if (item.abc === 'A') entry.a++;
+      else if (item.abc === 'B') entry.b++;
+      else if (item.abc === 'C') entry.c++;
+
       entry.total++;
     });
 
@@ -151,8 +155,11 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
     active: acc.active + curr.active,
     semi: acc.semi + curr.semiActive,
     inactive: acc.inactive + curr.inactive,
+    a: acc.a + curr.a,
+    b: acc.b + curr.b,
+    c: acc.c + curr.c,
     total: acc.total + curr.total
-  }), { active: 0, semi: 0, inactive: 0, total: 0 });
+  }), { active: 0, semi: 0, inactive: 0, a: 0, b: 0, c: 0, total: 0 });
 
   const activeRepsCount = tableData.length;
 
@@ -163,6 +170,9 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
       'Ativo': row.active,
       'Semi-ativo': row.semiActive,
       'Inativo': row.inactive,
+      'Curva A': row.a,
+      'Curva B': row.b,
+      'Curva C': row.c,
       'Total Geral': row.total
     }));
     onExport(csvData, `Status_Supervisor_${selectedSupervisor}_${startDate}_${endDate}`);
@@ -322,6 +332,26 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
               >
                 Inativo {renderSortIcon('inactive')}
               </th>
+              {/* ABC Columns */}
+              <th 
+                className="bg-emerald-700 text-center p-4 cursor-pointer hover:bg-emerald-600 transition-colors select-none"
+                onClick={() => handleSort('a')}
+              >
+                Curva A {renderSortIcon('a')}
+              </th>
+              <th 
+                className="bg-blue-600 text-center p-4 cursor-pointer hover:bg-blue-500 transition-colors select-none"
+                onClick={() => handleSort('b')}
+              >
+                Curva B {renderSortIcon('b')}
+              </th>
+              <th 
+                className="bg-amber-600 text-center p-4 cursor-pointer hover:bg-amber-500 transition-colors select-none"
+                onClick={() => handleSort('c')}
+              >
+                Curva C {renderSortIcon('c')}
+              </th>
+
               <th 
                 className="bg-gray-900 text-center p-4 cursor-pointer hover:bg-gray-800 transition-colors select-none"
                 onClick={() => handleSort('total')}
@@ -383,6 +413,23 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
                            </button>
                         ) : <span className="text-gray-300">-</span>}
                       </td>
+
+                      {/* ABC Cells */}
+                      <td className="p-3 px-4 text-center border-r border-gray-100 bg-emerald-50/10">
+                        {row.a > 0 ? (
+                           <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">{row.a}</span>
+                        ) : <span className="text-gray-300">-</span>}
+                      </td>
+                      <td className="p-3 px-4 text-center border-r border-gray-100 bg-blue-50/10">
+                        {row.b > 0 ? (
+                           <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">{row.b}</span>
+                        ) : <span className="text-gray-300">-</span>}
+                      </td>
+                      <td className="p-3 px-4 text-center border-r border-gray-100 bg-amber-50/10">
+                        {row.c > 0 ? (
+                           <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">{row.c}</span>
+                        ) : <span className="text-gray-300">-</span>}
+                      </td>
                       
                       {/* Total Cell */}
                       <td className="p-3 px-4 text-center font-bold text-gray-700">
@@ -430,6 +477,11 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
               >
                 {totals.inactive}
               </td>
+              {/* ABC Totals */}
+              <td className="bg-emerald-800 p-4">{totals.a}</td>
+              <td className="bg-blue-800 p-4">{totals.b}</td>
+              <td className="bg-amber-800 p-4">{totals.c}</td>
+
               <td 
                 className="bg-gray-900 p-4 cursor-pointer hover:bg-gray-800 transition-colors"
                 onClick={() => onDrillDown({ supervisor: selectedSupervisor })}

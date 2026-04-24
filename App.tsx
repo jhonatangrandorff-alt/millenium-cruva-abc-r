@@ -90,41 +90,66 @@ const App: React.FC = () => {
   }, []);
 
   const [showAdminModal, setShowAdminModal] = useState(false);
-  // Configuração Local obsoleto, removido para forçar Nuvem.
+  const [isDataSaved, setIsDataSaved] = useState(true);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isDataSaved) {
+        const msg = "Você tem alterações não gravadas na nuvem! Deseja realmente sair?";
+        e.preventDefault();
+        e.returnValue = msg;
+        return msg;
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDataSaved]);
+
   const [sbConfig] = useState<SupabaseConfig>(() => ({ url: '', key: '' }));
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      setLoadingMsg('Conectando à nuvem...');
+      setLoadingMsg('Sincronizando com a Nuvem Master (34k+ registros)...');
       try {
-        // Tenta buscar da Nuvem (o service já gerencia as credenciais globais e locais)
-        const cloudData = await supabaseService.fetchClients(sbConfig);
+        const cloudData = await supabaseService.fetchClients();
         if (cloudData && cloudData.length > 0) {
           setClientData(cloudData);
           setDataSource('SUPABASE');
-          await dbService.saveClients(cloudData); // Salva cópia local para modo offline
+          await dbService.saveClients(cloudData);
           setIsLoading(false);
           return;
         }
 
+        // Se chegar aqui, a nuvem está vazia. Verificamos o banco local.
         const dbData = await dbService.getAllClients();
         if (dbData && dbData.length > 0) {
           setClientData(dbData);
           setDataSource('LOCAL_DB');
         } else {
+          // Se for a primeira vez e não houver nada, mostramos o Mock apenas para não ficar em branco
           setClientData(MOCK_DATA);
           setDataSource('MOCK');
         }
-      } catch (error) {
-        setClientData(MOCK_DATA);
-        setDataSource('MOCK');
+      } catch (error: any) {
+        console.error("Erro crítico de carregamento:", error);
+        // Tenta recuperar do banco local (IndexedDB)
+        const dbData = await dbService.getAllClients();
+        if (dbData && dbData.length > 0) {
+          setClientData(dbData);
+          setDataSource('LOCAL_DB');
+          alert("Aviso: Exibindo dados salvos em cache (Modo Offline). A conexão com a nuvem falhou.");
+        } else {
+           setClientData(MOCK_DATA);
+           setDataSource('MOCK');
+           alert(`Falha total na conexão: ${error.message}. Verifique sua internet.`);
+        }
       } finally {
         setIsLoading(false);
       }
     };
     loadData();
-  }, [sbConfig]);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(TAB_STORAGE_KEY, activeTab);
@@ -311,6 +336,13 @@ const App: React.FC = () => {
           const logradouro = getVal(cols, ['endereço (logradouro)', 'endereco', 'logradouro', 'rua', 'endereco (logradouro)']);
           const numero = getVal(cols, ['número', 'numero', 'nº']);
 
+          const daysSincePurchase = parseInt(getVal(cols, ['dias']).replace(/\D/g, '') || '0', 10);
+          
+          // Cálculo da Curva ABC (Standard Millenium Logic: A<=30, B<=90, C>90)
+          let abc: 'A' | 'B' | 'C' = 'C';
+          if (daysSincePurchase <= 30) abc = 'A';
+          else if (daysSincePurchase <= 90) abc = 'B';
+
           return {
             id: rawId,
             socialName: name,
@@ -325,13 +357,14 @@ const App: React.FC = () => {
             activity: getVal(cols, ['ramo de atividade', 'ramo', 'atividade']),
             group: getVal(cols, ['grupo']),
             lastPurchaseDate: parseDate(getVal(cols, ['ult. compra', 'ultima compra', 'dt ult. compra'])),
-            daysSincePurchase: parseInt(getVal(cols, ['dias']).replace(/\D/g, '') || '0', 10),
+            daysSincePurchase: daysSincePurchase,
             registerDate: parseDate(getVal(cols, ['cadastro', 'dt. cadastro'])),
             representativeName: standardRep,
             rep3: getVal(cols, ['rep 3', 'rep3']) || standardRep,
             supervisor: getVal(cols, ['supervisor', 'setor', 'gerente']) || 'GERAL',
             population: parseInt(getVal(cols, ['habitantes', 'populacao']).replace(/\D/g, '') || '0', 10),
-            status: status
+            status: status,
+            abc: abc
           };
         }).filter(r => r !== null) as ClientRecord[];
 
@@ -341,18 +374,23 @@ const App: React.FC = () => {
 
           let cloudSyncSuccess = false;
           try {
-            setLoadingMsg('Sincronizando Nuvem Master...');
+            setLoadingMsg(`Enviando ${newRecords.length} registros para a Nuvem Master...`);
+            setIsLoading(true);
             await supabaseService.saveClients(sbConfig, newRecords);
             setDataSource('SUPABASE');
             cloudSyncSuccess = true;
           } catch (e: any) {
             console.warn("Falha ao sincronizar nuvem, usando apenas Local.", e);
             setDataSource('LOCAL_DB');
-            alert(`Atenção: Os dados foram salvos LOCALMENTE, mas houve um erro ao sincronizar com a Nuvem:\n${e.message}\n\nIsso significa que outras pessoas não verão essas atualizações até que o erro seja resolvido.`);
+            alert(`Atenção: Os dados foram salvos LOCALMENTE, mas a Sincronização em Nuvem falhou:\n${e.message}`);
+          } finally {
+            setIsLoading(false);
+            if (cloudSyncSuccess) setIsDataSaved(true);
+            else setIsDataSaved(false);
           }
 
           if (cloudSyncSuccess) {
-            alert(`${newRecords.length} clientes importados e sincronizados na NUVEM com sucesso!`);
+            alert(`SUCESSO GLOBAL: ${newRecords.length} clientes sincronizados na NUVEM. Agora todos os usuários verão estes dados ao atualizar a página.`);
           }
         } else {
           alert('Nenhum dado válido de cliente encontrado no arquivo.');
@@ -388,6 +426,30 @@ const App: React.FC = () => {
     setModalOpen(true);
   };
 
+  const handleManualSync = async () => {
+    if (clientData.length === 0 || dataSource === 'MOCK') {
+      alert("Nenhum dado real para gravar. Por favor, importe um arquivo primeiro.");
+      return;
+    }
+
+    if (confirm(`Deseja gravar agora os ${clientData.length} registros permanentemente na Nuvem Master?`)) {
+      setIsLoading(true);
+      setLoadingMsg(`Gravando ${clientData.length} registros...`);
+      try {
+        await supabaseService.saveClients(sbConfig, clientData);
+        setDataSource('SUPABASE');
+        setIsDataSaved(true);
+        alert("SUCESSO: Todos os dados foram gravados permanentemente na Nuvem!");
+      } catch (e: any) {
+        console.error("Erro no Sync Manual:", e);
+        setIsDataSaved(false);
+        alert(`FALHA NA GRAVAÇÃO: ${e.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   if (!userSectors) {
     return (
       <>
@@ -413,9 +475,10 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 font-sans text-gray-800">
       <div className={`w-full py-1 text-center text-xs font-bold uppercase tracking-wider text-white flex justify-center items-center gap-4 ${dataSource === 'SUPABASE' ? 'bg-emerald-600' : (dataSource === 'LOCAL_DB' ? 'bg-blue-600' : 'bg-gray-500')}`}>
-        <span>
+        <span className="flex items-center gap-1">
           <i className={`fas ${dataSource === 'SUPABASE' ? 'fa-cloud' : 'fa-database'} mr-2`}></i>
-          {dataSource === 'SUPABASE' ? 'Modo Nuvem (Sync On)' : 'Modo Offline (Local)'}
+          {dataSource === 'SUPABASE' ? 'Modo Nuvem Master v5' : 'Modo Offline (Local)'}
+          <span className="bg-yellow-400 text-black px-1.5 py-0.5 rounded ml-2 text-[9px] animate-pulse">NOVA BASE ATIVA</span>
         </span>
         <span className="bg-white/20 px-2 py-0.5 rounded flex items-center gap-2">
           <i className="fas fa-user text-[10px]"></i> {userName} ({userSectors?.includes('GERAL') ? 'GERAL' : userSectors?.join(', ')})
@@ -464,6 +527,28 @@ const App: React.FC = () => {
                 <button onClick={() => fileInputRef.current?.click()} className="bg-yellow-400 hover:bg-yellow-300 text-blue-900 px-5 py-2 rounded-lg text-sm font-bold flex items-center shadow-lg transform active:scale-95 transition-all">
                   <i className="fas fa-file-import mr-2"></i> Importar Relatório
                 </button>
+                {clientData.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    {!isDataSaved && (
+                      <span className="text-[10px] bg-red-600 text-white px-2 py-1 rounded-full animate-pulse font-black shadow-lg">
+                        ⚠️ DADOS PENDENTES
+                      </span>
+                    )}
+                    {isDataSaved && (
+                      <span className="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded-full font-black shadow-lg">
+                        ✅ CURVA ABC SALVA
+                      </span>
+                    )}
+                    <button 
+                      onClick={handleManualSync} 
+                      className={`px-5 py-2 rounded-lg text-sm font-bold flex items-center shadow-lg transform active:scale-95 transition-all border-2 border-white/20 ${isDataSaved ? 'bg-emerald-600 opacity-50 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-400 text-white animate-bounce-subtle'}`}
+                      disabled={isDataSaved}
+                    >
+                      <i className={`fas ${isDataSaved ? 'fa-check-circle' : 'fa-sync-alt'} mr-2 ${!isDataSaved ? 'animate-spin-slow' : ''}`}></i> 
+                      {isDataSaved ? 'GRAVADO COM SUCESSO' : 'CICLAR E SALVAR AGORA'}
+                    </button>
+                  </div>
+                )}
                 <button onClick={handleResetData} title="Limpar Banco de Dados" className="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center border border-red-500 hover:bg-red-500 transition-colors"><i className="fas fa-trash text-white"></i></button>
               </div>
             </div>

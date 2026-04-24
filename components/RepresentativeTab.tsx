@@ -129,6 +129,10 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
       else if (item.status === ClientStatus.SEMI_ACTIVE) entry.semiActive++;
       else if (item.status === ClientStatus.INACTIVE) entry.inactive++;
       
+      if (item.abc === 'A') entry.a++;
+      else if (item.abc === 'B') entry.b++;
+      else if (item.abc === 'C') entry.c++;
+
       entry.total++;
     });
 
@@ -149,9 +153,12 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
     active: acc.active + curr.active,
     semi: acc.semi + curr.semiActive,
     inactive: acc.inactive + curr.inactive,
+    a: acc.a + curr.a,
+    b: acc.b + curr.b,
+    c: acc.c + curr.c,
     total: acc.total + curr.total,
     pop: acc.pop + curr.population
-  }), { active: 0, semi: 0, inactive: 0, total: 0, pop: 0 });
+  }), { active: 0, semi: 0, inactive: 0, a: 0, b: 0, c: 0, total: 0, pop: 0 });
 
   const handleExport = () => {
     const csvData = tableData.map(row => ({
@@ -159,6 +166,9 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
       'Ativo': row.active,
       'Semi-ativo': row.semiActive,
       'Inativo': row.inactive,
+      'Curva A': row.a,
+      'Curva B': row.b,
+      'Curva C': row.c,
       'Total': row.total,
       'Habitantes': row.population
     }));
@@ -303,8 +313,28 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
               >
                 Inativo {renderSortIcon('inactive')}
               </th>
+              {/* ABC Columns */}
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50"
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-emerald-900/40 border-l border-white/10"
+                onClick={() => handleSort('a')}
+              >
+                A {renderSortIcon('a')}
+              </th>
+              <th 
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/40"
+                onClick={() => handleSort('b')}
+              >
+                B {renderSortIcon('b')}
+              </th>
+              <th 
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-amber-900/40"
+                onClick={() => handleSort('c')}
+              >
+                C {renderSortIcon('c')}
+              </th>
+
+              <th 
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50 border-l border-white/10"
                 onClick={() => handleSort('total')}
               >
                 Total {renderSortIcon('total')}
@@ -319,9 +349,58 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           </thead>
           <tbody>
             {tableData.length === 0 ? (
-              <tr><td colSpan={3} className="p-8 text-center text-gray-500 bg-gray-50">
-                {selectedRep ? "Nenhum dado encontrado" : "Selecione um representante para visualizar os dados"}
-              </td></tr>
+              <tr>
+                <td colSpan={6} className="p-0 text-center text-gray-400 bg-gray-50/50">
+                  {!selectedRep ? (
+                    <div className="p-12 animate-fade-in">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-10">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-blue-100 flex flex-col items-center">
+                          <span className="text-xs font-bold text-blue-400 uppercase mb-2">Total de Clientes</span>
+                          <span className="text-4xl font-black text-blue-900">{data.length.toLocaleString('pt-BR')}</span>
+                          <div className="mt-4 w-full h-1.5 bg-blue-50 rounded-full overflow-hidden">
+                             <div className="h-full bg-blue-600 w-full"></div>
+                          </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-green-100 flex flex-col items-center">
+                          <span className="text-xs font-bold text-green-400 uppercase mb-2">Representantes</span>
+                          <span className="text-4xl font-black text-green-900">{representatives.length}</span>
+                          <div className="mt-4 w-full h-1.5 bg-green-50 rounded-full overflow-hidden">
+                             <div className="h-full bg-green-500 w-full"></div>
+                          </div>
+                        </div>
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-purple-100 flex flex-col items-center">
+                          <span className="text-xs font-bold text-purple-400 uppercase mb-2">Cidades</span>
+                          <span className="text-4xl font-black text-purple-900">{new Set(data.map(d => d.city)).size}</span>
+                          <div className="mt-4 w-full h-1.5 bg-purple-50 rounded-full overflow-hidden">
+                             <div className="h-full bg-purple-500 w-full"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center animate-bounce">
+                           <i className="fas fa-search text-2xl text-blue-600"></i>
+                        </div>
+                        <p className="text-lg font-bold text-blue-900">
+                          Base de Dados Pronta!
+                        </p>
+                        <p className="text-sm text-gray-500 max-w-sm">
+                          Selecione um representante acima para detalhar o desempenho por cidade e situação.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-20 flex flex-col items-center gap-3">
+                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
+                         <i className="fas fa-users-slash text-2xl text-gray-300"></i>
+                      </div>
+                      <p className="text-base font-medium">
+                        Nenhum dado encontrado para este representante específico.
+                      </p>
+                    </div>
+                  )}
+                </td>
+              </tr>
             ) : (
               <>
                 {paddingTop > 0 && (
@@ -351,7 +430,24 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                            <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.INACTIVE })} className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-bold text-xs hover:bg-red-200">{row.inactive}</button>
                         ) : "-"}
                       </td>
-                      <td className="p-3 px-4 text-center font-bold">
+                      {/* ABC Cells */}
+                      <td className="p-3 px-4 text-center border-l border-gray-50 bg-emerald-50/20">
+                        {row.a > 0 ? (
+                           <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-black text-[10px]">{row.a}</span>
+                        ) : <span className="text-gray-300">-</span>}
+                      </td>
+                      <td className="p-3 px-4 text-center bg-blue-50/20">
+                        {row.b > 0 ? (
+                           <span className="px-2 py-0.5 rounded-md bg-blue-600 text-white font-black text-[10px]">{row.b}</span>
+                        ) : <span className="text-gray-300">-</span>}
+                      </td>
+                      <td className="p-3 px-4 text-center bg-amber-50/20">
+                        {row.c > 0 ? (
+                           <span className="px-2 py-0.5 rounded-md bg-amber-600 text-white font-black text-[10px]">{row.c}</span>
+                        ) : <span className="text-gray-300">-</span>}
+                      </td>
+
+                      <td className="p-3 px-4 text-center font-bold border-l border-gray-50">
                         <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city })} className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200">{row.total}</button>
                       </td>
                       <td className="p-3 px-4 text-right text-gray-600">
@@ -374,6 +470,9 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
               <td className="p-4 text-center bg-green-50">{totals.active}</td>
               <td className="p-4 text-center bg-orange-50">{totals.semi}</td>
               <td className="p-4 text-center bg-red-50">{totals.inactive}</td>
+              <td className="p-4 text-center bg-emerald-100/50">{totals.a}</td>
+              <td className="p-4 text-center bg-blue-100/50">{totals.b}</td>
+              <td className="p-4 text-center bg-amber-100/50">{totals.c}</td>
               <td className="p-4 text-center bg-blue-50">{totals.total}</td>
               <td className="p-4 text-right">{totals.pop.toLocaleString('pt-BR')}</td>
             </tr>
