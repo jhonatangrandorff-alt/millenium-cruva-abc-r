@@ -136,8 +136,15 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
 
     // 3. Sort
     return rows.sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
+      let aVal, bVal;
+      
+      if (sortConfig.key === 'atendimento') {
+        aVal = a.active + a.semiActive;
+        bVal = b.active + b.semiActive;
+      } else {
+        aVal = a[sortConfig.key as keyof RepViewRow];
+        bVal = b[sortConfig.key as keyof RepViewRow];
+      }
 
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -280,38 +287,19 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           <thead className="sticky top-0 z-10 shadow-sm">
             <tr className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
               <th 
-                className="text-left p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none w-[30%]"
+                className="text-left p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none w-[50%]"
                 onClick={() => handleSort('city')}
               >
                 Cidades/UF {renderSortIcon('city')}
               </th>
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-green-900/50 w-[14%]"
-                onClick={() => handleSort('active')}
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50 w-[25%]"
+                onClick={() => handleSort('atendimento')}
               >
-                Ativo {renderSortIcon('active')}
+                Atendimento (Ativo + Semi) {renderSortIcon('atendimento')}
               </th>
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-orange-900/50 w-[14%]"
-                onClick={() => handleSort('semiActive')}
-              >
-                Semi {renderSortIcon('semiActive')}
-              </th>
-              <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-red-900/50 w-[14%]"
-                onClick={() => handleSort('inactive')}
-              >
-                Inativo {renderSortIcon('inactive')}
-              </th>
-
-              <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50 border-l border-white/10 w-[14%]"
-                onClick={() => handleSort('total')}
-              >
-                Total {renderSortIcon('total')}
-              </th>
-              <th 
-                className="text-right p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-gray-800 w-[14%]"
+                className="text-right p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-gray-800 w-[25%]"
                 onClick={() => handleSort('population')}
               >
                 Habitantes {renderSortIcon('population')}
@@ -387,25 +375,16 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                         {row.city} - {row.state}
                       </td>
                       <td className="p-3 px-4 text-center">
-                        {row.active > 0 ? (
-                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.ACTIVE })} className="px-3 py-1 rounded-full bg-green-100 text-green-800 font-black text-sm hover:bg-green-200 transition-all transform hover:scale-105 shadow-sm">{row.active}</button>
+                        {(row.active + row.semiActive) > 0 ? (
+                           <button 
+                             onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: 'Ativo+Semi' as any })} 
+                             className="px-6 py-1.5 rounded-full bg-blue-100 text-blue-900 font-black text-base hover:bg-blue-200 transition-all transform hover:scale-105 shadow-md border border-blue-200"
+                           >
+                             {row.active + row.semiActive}
+                           </button>
                         ) : <span className="text-gray-300">-</span>}
                       </td>
-                      <td className="p-3 px-4 text-center">
-                        {row.semiActive > 0 ? (
-                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.SEMI_ACTIVE })} className="px-3 py-1 rounded-full bg-orange-100 text-orange-800 font-black text-sm hover:bg-orange-200 transition-all transform hover:scale-105 shadow-sm">{row.semiActive}</button>
-                        ) : <span className="text-gray-300">-</span>}
-                      </td>
-                      <td className="p-3 px-4 text-center">
-                        {row.inactive > 0 ? (
-                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.INACTIVE })} className="px-3 py-1 rounded-full bg-red-100 text-red-800 font-black text-sm hover:bg-red-200 transition-all transform hover:scale-105 shadow-sm">{row.inactive}</button>
-                        ) : <span className="text-gray-300">-</span>}
-                      </td>
-
-                      <td className="p-3 px-4 text-center font-bold border-l border-gray-50">
-                        <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city })} className="px-3 py-1 rounded-full bg-blue-100 text-blue-900 font-black text-sm hover:bg-blue-200 transition-all transform hover:scale-105 shadow-sm">{row.total}</button>
-                      </td>
-                      <td className="p-3 px-4 text-right text-gray-700 font-bold text-sm">
+                      <td className="p-3 px-4 text-right text-gray-700 font-bold text-base">
                         {row.population.toLocaleString('pt-BR')}
                       </td>
                     </tr>
@@ -413,7 +392,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                 })}
                 {paddingBottom > 0 && (
                   <tr style={{ height: `${paddingBottom}px` }}>
-                    <td colSpan={6} />
+                    <td colSpan={3} />
                   </tr>
                 )}
               </>
@@ -422,11 +401,8 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           <tfoot className="sticky bottom-0 z-10">
             <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
               <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
-              <td className="p-4 text-center bg-green-50/50 text-green-700 text-lg border-x border-gray-50">{totals.active.toLocaleString('pt-BR')}</td>
-              <td className="p-4 text-center bg-orange-50/50 text-orange-700 text-lg border-x border-gray-50">{totals.semi.toLocaleString('pt-BR')}</td>
-              <td className="p-4 text-center bg-red-50/50 text-red-700 text-lg border-x border-gray-50">{totals.inactive.toLocaleString('pt-BR')}</td>
-              <td className="p-4 text-center bg-blue-50/50 text-blue-900 text-xl border-x border-gray-50">{totals.total.toLocaleString('pt-BR')}</td>
-              <td className="p-4 text-right bg-gray-50 text-gray-800 text-base">{totals.pop.toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-center bg-blue-50/50 text-blue-900 text-2xl border-x border-gray-50">{(totals.active + totals.semi).toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-right bg-gray-50 text-gray-800 text-xl">{totals.pop.toLocaleString('pt-BR')}</td>
             </tr>
           </tfoot>
         </table>
