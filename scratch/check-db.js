@@ -6,17 +6,28 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
-  console.log('Listing users in DB...');
-  const { data, error } = await supabase
-    .from('users')
-    .select('*');
+  console.log('Checking base_oficial_millenium...');
+  const { count, error } = await supabase
+    .from('base_oficial_millenium')
+    .select('*', { count: 'exact', head: true });
 
   if (error) {
     console.error('Error:', error);
-    return;
+  } else {
+    console.log('Total records in base_oficial_millenium:', count);
   }
 
-  console.log('Users:', JSON.stringify(data, null, 2));
+  console.log('Checking users...');
+  const { data: users, error: userError } = await supabase
+    .from('users')
+    .select('username, sectors');
+  
+  if (userError) {
+    console.error('User Error:', userError);
+  } else {
+    console.log('Users found:', users.length);
+    console.log('User list:', JSON.stringify(users, null, 2));
+  }
 }
 
 check();

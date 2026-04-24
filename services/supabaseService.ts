@@ -50,7 +50,7 @@ export const supabaseService = {
     try {
       // 1. Obter o total de registros primeiro (muito rápido)
       const { count, error: countError } = await client
-        .from('base_oficial_millenium')
+        .from('clients')
         .select('*', { count: 'exact', head: true });
 
       if (countError) throw new Error(countError.message);
@@ -72,12 +72,19 @@ export const supabaseService = {
           const end = start + step - 1;
           batchPromises.push(
             client
-              .from('base_oficial_millenium')
+              .from('clients')
               .select('*')
               .range(start, end)
               .then(({ data, error }) => {
                 if (error) throw error;
-                const records = data as ClientRecord[];
+                const records = (data as any[]).map(r => {
+                  // Fallback para calcular Curva ABC se não existir na coluna do banco
+                  if (!r.abc) {
+                    const days = r.daysSincePurchase || 0;
+                    r.abc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
+                  }
+                  return r as ClientRecord;
+                });
                 loadedCount += records.length;
                 if (onProgress) onProgress(loadedCount, total);
                 return records;
@@ -118,7 +125,7 @@ export const supabaseService = {
         const batch = chunks.slice(i, i + CONCURRENCY);
         await Promise.all(batch.map(chunk => 
           client
-            .from('base_oficial_millenium')
+            .from('clients')
             .upsert(chunk, { onConflict: 'id' })
             .then(({ error }) => {
               if (error) throw error;
