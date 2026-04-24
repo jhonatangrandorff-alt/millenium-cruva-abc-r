@@ -304,38 +304,38 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
       {/* Table - Virtualized */}
       <div 
         ref={containerRef}
-        className="overflow-auto max-h-[600px] rounded-2xl shadow-lg border border-gray-200 relative"
+        className="overflow-auto max-h-[600px] rounded-2xl shadow-lg border border-gray-200 relative bg-white"
       >
-        <table className="w-full text-sm font-sans border-collapse">
+        <table className="w-full text-sm font-sans border-collapse table-fixed">
           <thead className="sticky top-0 z-10 shadow-sm">
             <tr className="text-white">
               <th 
-                className="bg-blue-900 text-left p-4 w-1/3 cursor-pointer hover:bg-blue-800 transition-colors select-none"
+                className="bg-blue-900 text-left p-4 w-[40%] cursor-pointer hover:bg-blue-800 transition-colors select-none"
                 onClick={() => handleSort('representativeName')}
               >
                 Representante (Rep 3) {renderSortIcon('representativeName')}
               </th>
               <th 
-                className="bg-green-600 text-center p-4 cursor-pointer hover:bg-green-500 transition-colors select-none"
+                className="bg-green-600 text-center p-4 w-[15%] cursor-pointer hover:bg-green-500 transition-colors select-none"
                 onClick={() => handleSort('active')}
               >
                 Ativo {renderSortIcon('active')}
               </th>
               <th 
-                className="bg-orange-400 text-center p-4 cursor-pointer hover:bg-orange-300 transition-colors select-none"
+                className="bg-orange-400 text-center p-4 w-[15%] cursor-pointer hover:bg-orange-300 transition-colors select-none"
                 onClick={() => handleSort('semiActive')}
               >
                 Semi-Ativo {renderSortIcon('semiActive')}
               </th>
               <th 
-                className="bg-red-600 text-center p-4 cursor-pointer hover:bg-red-500 transition-colors select-none"
+                className="bg-red-600 text-center p-4 w-[15%] cursor-pointer hover:bg-red-500 transition-colors select-none"
                 onClick={() => handleSort('inactive')}
               >
                 Inativo {renderSortIcon('inactive')}
               </th>
 
               <th 
-                className="bg-gray-900 text-center p-4 cursor-pointer hover:bg-gray-800 transition-colors select-none"
+                className="bg-gray-900 text-center p-4 w-[15%] cursor-pointer hover:bg-gray-800 transition-colors select-none"
                 onClick={() => handleSort('total')}
               >
                 Total Geral {renderSortIcon('total')}

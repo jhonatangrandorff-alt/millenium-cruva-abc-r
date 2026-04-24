@@ -274,44 +274,44 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
       {/* Table - Virtualized */}
       <div 
         ref={containerRef}
-        className="overflow-auto max-h-[600px] border border-gray-200 rounded-2xl shadow-lg relative"
+        className="overflow-auto max-h-[600px] border border-gray-200 rounded-2xl shadow-lg relative bg-white"
       >
-        <table className="w-full text-sm font-sans border-collapse">
+        <table className="w-full text-sm font-sans border-collapse table-fixed">
           <thead className="sticky top-0 z-10 shadow-sm">
             <tr className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
               <th 
-                className="text-left p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none"
+                className="text-left p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none w-[30%]"
                 onClick={() => handleSort('city')}
               >
                 Cidades/UF {renderSortIcon('city')}
               </th>
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-green-900/50"
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-green-900/50 w-[14%]"
                 onClick={() => handleSort('active')}
               >
                 Ativo {renderSortIcon('active')}
               </th>
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-orange-900/50"
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-orange-900/50 w-[14%]"
                 onClick={() => handleSort('semiActive')}
               >
                 Semi {renderSortIcon('semiActive')}
               </th>
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-red-900/50"
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-red-900/50 w-[14%]"
                 onClick={() => handleSort('inactive')}
               >
                 Inativo {renderSortIcon('inactive')}
               </th>
 
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50 border-l border-white/10"
+                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50 border-l border-white/10 w-[14%]"
                 onClick={() => handleSort('total')}
               >
                 Total {renderSortIcon('total')}
               </th>
               <th 
-                className="text-right p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none"
+                className="text-right p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-gray-800 w-[14%]"
                 onClick={() => handleSort('population')}
               >
                 Habitantes {renderSortIcon('population')}
@@ -413,7 +413,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                 })}
                 {paddingBottom > 0 && (
                   <tr style={{ height: `${paddingBottom}px` }}>
-                    <td colSpan={3} />
+                    <td colSpan={6} />
                   </tr>
                 )}
               </>
