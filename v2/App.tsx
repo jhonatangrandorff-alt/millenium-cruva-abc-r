@@ -340,10 +340,6 @@ const App: React.FC = () => {
 
           const daysSincePurchase = parseInt(getVal(cols, ['dias']).replace(/\D/g, '') || '0', 10);
           
-          // Cálculo da Curva ABC (Standard Millenium Logic: A<=30, B<=90, C>90)
-          let abc: 'A' | 'B' | 'C' = 'C';
-          if (daysSincePurchase <= 30) abc = 'A';
-          else if (daysSincePurchase <= 90) abc = 'B';
 
           return {
             id: rawId,
@@ -365,8 +361,7 @@ const App: React.FC = () => {
             rep3: getVal(cols, ['rep 3', 'rep3']) || standardRep,
             supervisor: getVal(cols, ['supervisor', 'setor', 'gerente']) || 'GERAL',
             population: parseInt(getVal(cols, ['habitantes', 'populacao']).replace(/\D/g, '') || '0', 10),
-            status: status,
-            abc: abc
+            status: status
           };
         }).filter(r => r !== null) as ClientRecord[];
 
@@ -538,7 +533,7 @@ const App: React.FC = () => {
                     )}
                     {isDataSaved && (
                       <span className="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded-full font-black shadow-lg">
-                        ✅ CURVA ABC SALVA
+                        ✅ SINCRONIZADO
                       </span>
                     )}
                     <button 

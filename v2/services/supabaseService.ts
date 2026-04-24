@@ -18,7 +18,7 @@ const VALID_CLIENT_COLUMNS = [
   'id', 'socialName', 'fantasyName', 'cnpj', 'ie', 'city', 'state', 
   'address', 'neighborhood', 'cep', 'activity', 'group', 
   'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
-  'representativeName', 'rep3', 'supervisor', 'population', 'status', 'abc'
+  'representativeName', 'rep3', 'supervisor', 'population', 'status'
 ];
 
 const sanitizeClient = (client: any) => {
@@ -78,11 +78,6 @@ export const supabaseService = {
               .then(({ data, error }) => {
                 if (error) throw error;
                 const records = (data as any[]).map(r => {
-                  // Fallback para calcular Curva ABC se não existir na coluna do banco
-                  if (!r.abc) {
-                    const days = r.daysSincePurchase || 0;
-                    r.abc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
-                  }
                   return r as ClientRecord;
                 });
                 loadedCount += records.length;
