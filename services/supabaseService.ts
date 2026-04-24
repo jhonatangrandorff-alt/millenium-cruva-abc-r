@@ -39,7 +39,7 @@ const sanitizeClient = (client: any) => {
 
 export const supabaseService = {
   // Busca todos os clientes do Supabase
-  fetchClients: async (config?: SupabaseConfig): Promise<ClientRecord[]> => {
+  fetchClients: async (config?: SupabaseConfig, onProgress?: (current: number, total: number) => void): Promise<ClientRecord[]> => {
     const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
 
     if (!client) {
@@ -58,9 +58,10 @@ export const supabaseService = {
       const total = count || 0;
       if (total === 0) return [];
 
-      const step = 1000; // Blocos maiores para reduzir número de requisições
+      const step = 1000; 
       const pages = Math.ceil(total / step);
       let allData: ClientRecord[] = [];
+      let loadedCount = 0;
       
       // 2. Buscar páginas em paralelo com limite de concorrência
       const CONCURRENCY_LIMIT = 5;
@@ -76,7 +77,10 @@ export const supabaseService = {
               .range(start, end)
               .then(({ data, error }) => {
                 if (error) throw error;
-                return data as ClientRecord[];
+                const records = data as ClientRecord[];
+                loadedCount += records.length;
+                if (onProgress) onProgress(loadedCount, total);
+                return records;
               })
           );
         }

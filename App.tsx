@@ -112,7 +112,9 @@ const App: React.FC = () => {
       setIsLoading(true);
       setLoadingMsg('Sincronizando com a Nuvem Master (34k+ registros)...');
       try {
-        const cloudData = await supabaseService.fetchClients();
+        const cloudData = await supabaseService.fetchClients(undefined, (current, total) => {
+          setLoadingMsg(`Sincronizando: ${current.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} registros...`);
+        });
         if (cloudData && cloudData.length > 0) {
           setClientData(cloudData);
           setDataSource('SUPABASE');
