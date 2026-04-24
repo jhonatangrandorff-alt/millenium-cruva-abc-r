@@ -388,24 +388,24 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                       </td>
                       <td className="p-3 px-4 text-center">
                         {row.active > 0 ? (
-                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.ACTIVE })} className="px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-bold text-xs hover:bg-green-200">{row.active}</button>
-                        ) : "-"}
+                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.ACTIVE })} className="px-3 py-1 rounded-full bg-green-100 text-green-800 font-black text-sm hover:bg-green-200 transition-all transform hover:scale-105 shadow-sm">{row.active}</button>
+                        ) : <span className="text-gray-300">-</span>}
                       </td>
                       <td className="p-3 px-4 text-center">
                         {row.semiActive > 0 ? (
-                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.SEMI_ACTIVE })} className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-bold text-xs hover:bg-orange-200">{row.semiActive}</button>
-                        ) : "-"}
+                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.SEMI_ACTIVE })} className="px-3 py-1 rounded-full bg-orange-100 text-orange-800 font-black text-sm hover:bg-orange-200 transition-all transform hover:scale-105 shadow-sm">{row.semiActive}</button>
+                        ) : <span className="text-gray-300">-</span>}
                       </td>
                       <td className="p-3 px-4 text-center">
                         {row.inactive > 0 ? (
-                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.INACTIVE })} className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 font-bold text-xs hover:bg-red-200">{row.inactive}</button>
-                        ) : "-"}
+                           <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: ClientStatus.INACTIVE })} className="px-3 py-1 rounded-full bg-red-100 text-red-800 font-black text-sm hover:bg-red-200 transition-all transform hover:scale-105 shadow-sm">{row.inactive}</button>
+                        ) : <span className="text-gray-300">-</span>}
                       </td>
 
                       <td className="p-3 px-4 text-center font-bold border-l border-gray-50">
-                        <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city })} className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200">{row.total}</button>
+                        <button onClick={() => onDrillDown({ rep: selectedRep, city: row.city })} className="px-3 py-1 rounded-full bg-blue-100 text-blue-900 font-black text-sm hover:bg-blue-200 transition-all transform hover:scale-105 shadow-sm">{row.total}</button>
                       </td>
-                      <td className="p-3 px-4 text-right text-gray-600">
+                      <td className="p-3 px-4 text-right text-gray-700 font-bold text-sm">
                         {row.population.toLocaleString('pt-BR')}
                       </td>
                     </tr>
@@ -420,16 +420,13 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
             )}
           </tbody>
           <tfoot className="sticky bottom-0 z-10">
-            <tr className="bg-gray-100 text-gray-800 font-bold border-t-2 border-gray-300 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
-              <td className="p-4">Total Geral</td>
-              <td className="p-4 text-center bg-green-50">{totals.active}</td>
-              <td className="p-4 text-center bg-orange-50">{totals.semi}</td>
-              <td className="p-4 text-center bg-red-50">{totals.inactive}</td>
-              <td className="p-4 text-center bg-emerald-100/50">{totals.a}</td>
-              <td className="p-4 text-center bg-blue-100/50">{totals.b}</td>
-              <td className="p-4 text-center bg-amber-100/50">{totals.c}</td>
-              <td className="p-4 text-center bg-blue-50">{totals.total}</td>
-              <td className="p-4 text-right">{totals.pop.toLocaleString('pt-BR')}</td>
+            <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
+              <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
+              <td className="p-4 text-center bg-green-50/50 text-green-700 text-lg border-x border-gray-50">{totals.active.toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-center bg-orange-50/50 text-orange-700 text-lg border-x border-gray-50">{totals.semi.toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-center bg-red-50/50 text-red-700 text-lg border-x border-gray-50">{totals.inactive.toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-center bg-blue-50/50 text-blue-900 text-xl border-x border-gray-50">{totals.total.toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-right bg-gray-50 text-gray-800 text-base">{totals.pop.toLocaleString('pt-BR')}</td>
             </tr>
           </tfoot>
         </table>

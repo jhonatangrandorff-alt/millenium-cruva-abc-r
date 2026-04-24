@@ -354,7 +354,7 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
                         {row.active > 0 ? (
                            <button 
                              onClick={() => onDrillDown({ rep: row.representativeName, supervisor: selectedSupervisor, status: ClientStatus.ACTIVE })}
-                             className="px-3 py-1 rounded-full bg-green-100 text-green-800 font-bold text-xs hover:bg-green-200 transition-colors"
+                             className="px-3 py-1 rounded-full bg-green-100 text-green-800 font-black text-sm hover:bg-green-200 transition-all transform hover:scale-105 shadow-sm"
                            >
                              {row.active}
                            </button>
@@ -366,7 +366,7 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
                         {row.semiActive > 0 ? (
                            <button 
                             onClick={() => onDrillDown({ rep: row.representativeName, supervisor: selectedSupervisor, status: ClientStatus.SEMI_ACTIVE })}
-                            className="px-3 py-1 rounded-full bg-orange-100 text-orange-800 font-bold text-xs hover:bg-orange-200 transition-colors"
+                            className="px-3 py-1 rounded-full bg-orange-100 text-orange-800 font-black text-sm hover:bg-orange-200 transition-all transform hover:scale-105 shadow-sm"
                            >
                              {row.semiActive}
                            </button>
@@ -378,7 +378,7 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
                         {row.inactive > 0 ? (
                            <button 
                             onClick={() => onDrillDown({ rep: row.representativeName, supervisor: selectedSupervisor, status: ClientStatus.INACTIVE })}
-                            className="px-3 py-1 rounded-full bg-red-100 text-red-800 font-bold text-xs hover:bg-red-200 transition-colors"
+                            className="px-3 py-1 rounded-full bg-red-100 text-red-800 font-black text-sm hover:bg-red-200 transition-all transform hover:scale-105 shadow-sm"
                            >
                              {row.inactive}
                            </button>
@@ -391,7 +391,7 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
                         {row.total > 0 ? (
                           <button 
                             onClick={() => onDrillDown({ rep: row.representativeName, supervisor: selectedSupervisor })}
-                            className="px-3 py-1 rounded-full bg-gray-200 text-gray-900 font-bold text-xs hover:bg-gray-300 transition-colors"
+                            className="px-3 py-1 rounded-full bg-blue-100 text-blue-900 font-black text-sm hover:bg-blue-200 transition-all transform hover:scale-105 shadow-sm"
                           >
                             {row.total}
                           </button>
@@ -409,40 +409,32 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
             )}
           </tbody>
           <tfoot className="sticky bottom-0 z-10">
-            <tr className="text-white font-bold text-center shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
-              <td className="bg-blue-900 text-left p-4">Total Geral</td>
+            <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
+              <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
               <td 
-                className="bg-green-600 p-4 cursor-pointer hover:bg-green-500 transition-colors"
+                className="p-4 text-center bg-green-50/50 text-green-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-green-100/50 transition-colors"
                 onClick={() => onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.ACTIVE })}
-                title="Ver detalhes de Ativos"
               >
-                {totals.active}
+                {totals.active.toLocaleString('pt-BR')}
               </td>
               <td 
-                className="bg-orange-500 p-4 cursor-pointer hover:bg-orange-400 transition-colors"
+                className="p-4 text-center bg-orange-50/50 text-orange-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-orange-100/50 transition-colors"
                 onClick={() => onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.SEMI_ACTIVE })}
-                title="Ver detalhes de Semi-ativos"
               >
-                {totals.semi}
+                {totals.semi.toLocaleString('pt-BR')}
               </td>
               <td 
-                className="bg-red-700 p-4 cursor-pointer hover:bg-red-600 transition-colors"
+                className="p-4 text-center bg-red-50/50 text-red-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-red-100/50 transition-colors"
                 onClick={() => onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.INACTIVE })}
-                title="Ver detalhes de Inativos"
               >
-                {totals.inactive}
+                {totals.inactive.toLocaleString('pt-BR')}
               </td>
-              {/* ABC Totals */}
-              <td className="bg-emerald-800 p-4">{totals.a}</td>
-              <td className="bg-blue-800 p-4">{totals.b}</td>
-              <td className="bg-amber-800 p-4">{totals.c}</td>
 
               <td 
-                className="bg-gray-900 p-4 cursor-pointer hover:bg-gray-800 transition-colors"
+                className="p-4 text-center bg-blue-50/50 text-blue-900 text-xl border-x border-gray-50 cursor-pointer hover:bg-blue-100/50 transition-colors"
                 onClick={() => onDrillDown({ supervisor: selectedSupervisor })}
-                title="Ver detalhes Geral"
               >
-                {totals.total}
+                {totals.total.toLocaleString('pt-BR')}
               </td>
             </tr>
           </tfoot>
