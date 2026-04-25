@@ -8,8 +8,8 @@ export interface SupabaseConfig {
 }
 
 // Inicializar cliente Global com chaves de produção (Blindagem de Conexão)
-const globalUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ndlqdcccrimqktzxaozl.supabase.co';
-const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kbHFkY2NjcmltcWt0enhhb3psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNDAyNDEsImV4cCI6MjA5MjYxNjI0MX0.QalzSGDFcV37jaZ5yx2qwb6YvNvCl7dBxk740NOwmzE';
+const globalUrl = import.meta.env.VITE_SUPABASE_URL || 'https://acvpejgyqondqwsjbwaa.supabase.co';
+const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjdnBlamd5cW9uZHF3c2pid2FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNzg0MTgsImV4cCI6MjA5MjYxNDQxOH0.o0-gPxndIo9Zsi_uQkavDOKdtBPEaCWEWBFIhyCvrcI';
 
 export const supabase = createClient(globalUrl, globalKey);
 
