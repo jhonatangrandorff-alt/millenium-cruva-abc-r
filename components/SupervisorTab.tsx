@@ -121,6 +121,9 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
           active: 0,
           semiActive: 0,
           inactive: 0,
+          a: 0,
+          b: 0,
+          c: 0,
           total: 0
         });
       }
@@ -130,6 +133,10 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
       else if (item.status === ClientStatus.SEMI_ACTIVE) entry.semiActive++;
       else if (item.status === ClientStatus.INACTIVE) entry.inactive++;
       
+      if (item.abc === 'A') entry.a++;
+      else if (item.abc === 'B') entry.b++;
+      else if (item.abc === 'C') entry.c++;
+
       entry.total++;
     });
 
@@ -151,8 +158,11 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
     active: acc.active + curr.active,
     semi: acc.semi + curr.semiActive,
     inactive: acc.inactive + curr.inactive,
+    a: acc.a + curr.a,
+    b: acc.b + curr.b,
+    c: acc.c + curr.c,
     total: acc.total + curr.total
-  }), { active: 0, semi: 0, inactive: 0, total: 0 });
+  }), { active: 0, semi: 0, inactive: 0, a: 0, b: 0, c: 0, total: 0 });
 
   const activeRepsCount = tableData.length;
 
@@ -163,6 +173,9 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
       'Ativo': row.active,
       'Semi-ativo': row.semiActive,
       'Inativo': row.inactive,
+      'Curva A': row.a,
+      'Curva B': row.b,
+      'Curva C': row.c,
       'Total Geral': row.total
     }));
     onExport(csvData, `Status_Supervisor_${selectedSupervisor}_${startDate}_${endDate}`);
@@ -304,36 +317,18 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
               >
                 Representante (Rep 3) {renderSortIcon('representativeName')}
               </th>
-              <th 
-                className="bg-green-600 text-center p-4 w-[15%] cursor-pointer hover:bg-green-500 transition-colors select-none"
-                onClick={() => handleSort('active')}
-              >
-                Ativo {renderSortIcon('active')}
-              </th>
-              <th 
-                className="bg-orange-400 text-center p-4 w-[15%] cursor-pointer hover:bg-orange-300 transition-colors select-none"
-                onClick={() => handleSort('semiActive')}
-              >
-                Semi-Ativo {renderSortIcon('semiActive')}
-              </th>
-              <th 
-                className="bg-red-600 text-center p-4 w-[15%] cursor-pointer hover:bg-red-500 transition-colors select-none"
-                onClick={() => handleSort('inactive')}
-              >
-                Inativo {renderSortIcon('inactive')}
-              </th>
-
-              <th 
-                className="bg-gray-900 text-center p-4 w-[15%] cursor-pointer hover:bg-gray-800 transition-colors select-none"
-                onClick={() => handleSort('total')}
-              >
-                Total Geral {renderSortIcon('total')}
-              </th>
+              <th className="bg-green-600 text-center p-4 w-[12%] cursor-pointer hover:bg-green-500 transition-colors select-none" onClick={() => handleSort('active')}>Ativo {renderSortIcon('active')}</th>
+              <th className="bg-orange-400 text-center p-4 w-[12%] cursor-pointer hover:bg-orange-300 transition-colors select-none" onClick={() => handleSort('semiActive')}>Semi {renderSortIcon('semiActive')}</th>
+              <th className="bg-red-600 text-center p-4 w-[12%] cursor-pointer hover:bg-red-500 transition-colors select-none" onClick={() => handleSort('inactive')}>Inat. {renderSortIcon('inactive')}</th>
+              <th className="bg-emerald-700 text-center p-4 w-[8%] cursor-pointer hover:bg-emerald-600 transition-colors select-none text-xs" onClick={() => handleSort('a')}>A {renderSortIcon('a')}</th>
+              <th className="bg-blue-600 text-center p-4 w-[8%] cursor-pointer hover:bg-blue-500 transition-colors select-none text-xs" onClick={() => handleSort('b')}>B {renderSortIcon('b')}</th>
+              <th className="bg-amber-600 text-center p-4 w-[8%] cursor-pointer hover:bg-amber-500 transition-colors select-none text-xs" onClick={() => handleSort('c')}>C {renderSortIcon('c')}</th>
+              <th className="bg-gray-900 text-center p-4 w-[15%] cursor-pointer hover:bg-gray-800 transition-colors select-none" onClick={() => handleSort('total')}>Total {renderSortIcon('total')}</th>
             </tr>
           </thead>
           <tbody>
             {tableData.length === 0 ? (
-               <tr><td colSpan={5} className="p-8 text-center text-gray-500 bg-gray-50">
+               <tr><td colSpan={8} className="p-8 text-center text-gray-500 bg-gray-50">
                  {selectedSupervisor ? "Nenhum dado para este período" : "Selecione um supervisor para visualizar os dados"}
                </td></tr>
             ) : (
@@ -384,6 +379,15 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
                            </button>
                         ) : <span className="text-gray-300">-</span>}
                       </td>
+                      <td className="p-3 px-1 text-center border-r border-gray-100 bg-emerald-50/10">
+                        {row.a > 0 ? <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">{row.a}</span> : <span className="text-gray-300">-</span>}
+                      </td>
+                      <td className="p-3 px-1 text-center border-r border-gray-100 bg-blue-50/10">
+                        {row.b > 0 ? <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">{row.b}</span> : <span className="text-gray-300">-</span>}
+                      </td>
+                      <td className="p-3 px-1 text-center border-r border-gray-100 bg-amber-50/10">
+                        {row.c > 0 ? <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">{row.c}</span> : <span className="text-gray-300">-</span>}
+                      </td>
 
                       
                       {/* Total Cell */}
@@ -411,31 +415,13 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
           <tfoot className="sticky bottom-0 z-10">
             <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
               <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
-              <td 
-                className="p-4 text-center bg-green-50/50 text-green-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-green-100/50 transition-colors"
-                onClick={() => onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.ACTIVE })}
-              >
-                {totals.active.toLocaleString('pt-BR')}
-              </td>
-              <td 
-                className="p-4 text-center bg-orange-50/50 text-orange-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-orange-100/50 transition-colors"
-                onClick={() => onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.SEMI_ACTIVE })}
-              >
-                {totals.semi.toLocaleString('pt-BR')}
-              </td>
-              <td 
-                className="p-4 text-center bg-red-50/50 text-red-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-red-100/50 transition-colors"
-                onClick={() => onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.INACTIVE })}
-              >
-                {totals.inactive.toLocaleString('pt-BR')}
-              </td>
-
-              <td 
-                className="p-4 text-center bg-blue-50/50 text-blue-900 text-xl border-x border-gray-50 cursor-pointer hover:bg-blue-100/50 transition-colors"
-                onClick={() => onDrillDown({ supervisor: selectedSupervisor })}
-              >
-                {totals.total.toLocaleString('pt-BR')}
-              </td>
+              <td className="bg-green-600 text-white p-4 text-center border-x border-white/10">{totals.active}</td>
+              <td className="bg-orange-500 text-white p-4 text-center border-x border-white/10">{totals.semi}</td>
+              <td className="bg-red-700 text-white p-4 text-center border-x border-white/10">{totals.inactive}</td>
+              <td className="bg-emerald-800 text-white p-4 text-center text-xs border-x border-white/10">{totals.a}</td>
+              <td className="bg-blue-800 text-white p-4 text-center text-xs border-x border-white/10">{totals.b}</td>
+              <td className="bg-amber-800 text-white p-4 text-center text-xs border-x border-white/10">{totals.c}</td>
+              <td className="bg-gray-900 text-white p-4 text-center">{totals.total}</td>
             </tr>
           </tfoot>
         </table>

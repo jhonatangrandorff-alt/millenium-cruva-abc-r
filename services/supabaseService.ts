@@ -8,17 +8,17 @@ export interface SupabaseConfig {
 }
 
 // Inicializar cliente Global com chaves de produção (Blindagem de Conexão)
-const globalUrl = import.meta.env.VITE_SUPABASE_URL || 'https://acvpejgyqondqwsjbwaa.supabase.co';
-const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjdnBlamd5cW9uZHF3c2pid2FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNzg0MTgsImV4cCI6MjA5MjYxNDQxOH0.o0-gPxndIo9Zsi_uQkavDOKdtBPEaCWEWBFIhyCvrcI';
+const globalUrl = import.meta.env.VITE_SUPABASE_URL || 'https://nqrtrzfkryihlllzdlgw.supabase.co';
+const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xcnRyemZrcnlpaGxsbHpkbGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0ODEyODQsImV4cCI6MjA4ODA1NzI4NH0.al_gpeQjLms0T1op8UyhdtaN7PJAaHxWGFPIx0ZJM_8';
 
-export const supabase = createClient(globalUrl, globalKey);
+export let supabase = createClient(globalUrl, globalKey);
 
 // Campos que existem na tabela 'base_oficial_millenium' do Supabase para evitar erro de coluna inexistente
 const VALID_CLIENT_COLUMNS = [
   'id', 'socialName', 'fantasyName', 'cnpj', 'ie', 'city', 'state', 
   'address', 'neighborhood', 'cep', 'activity', 'group', 
   'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
-  'representativeName', 'rep3', 'supervisor', 'population', 'status'
+  'representativeName', 'rep3', 'supervisor', 'population', 'status', 'abc'
 ];
 
 const sanitizeClient = (client: any) => {
@@ -38,6 +38,12 @@ const sanitizeClient = (client: any) => {
 };
 
 export const supabaseService = {
+  updateConfig: (url: string, key: string) => {
+    if (url && key) {
+      supabase = createClient(url, key);
+    }
+  },
+
   // Busca todos os clientes do Supabase
   fetchClients: async (config?: SupabaseConfig, onProgress?: (current: number, total: number) => void): Promise<ClientRecord[]> => {
     const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
@@ -78,6 +84,11 @@ export const supabaseService = {
               .then(({ data, error }) => {
                 if (error) throw error;
                 const records = (data as any[]).map(r => {
+                  // Fallback para calcular Curva ABC se não existir na coluna do banco
+                  if (!r.abc) {
+                    const days = r.daysSincePurchase || 0;
+                    r.abc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
+                  }
                   return r as ClientRecord;
                 });
                 loadedCount += records.length;

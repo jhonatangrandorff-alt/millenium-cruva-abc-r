@@ -105,6 +105,14 @@ const App: React.FC = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDataSaved]);
 
+  useEffect(() => {
+    const savedUrl = localStorage.getItem('MILLENIUM_SB_URL');
+    const savedKey = localStorage.getItem('MILLENIUM_SB_KEY');
+    if (savedUrl && savedKey) {
+      supabaseService.updateConfig(savedUrl, savedKey);
+    }
+  }, []);
+
   const [sbConfig] = useState<SupabaseConfig>(() => ({ url: '', key: '' }));
 
   useEffect(() => {
@@ -340,6 +348,10 @@ const App: React.FC = () => {
 
           const daysSincePurchase = parseInt(getVal(cols, ['dias']).replace(/\D/g, '') || '0', 10);
           
+          // Curva ABC
+          let abc: 'A' | 'B' | 'C' = 'C';
+          if (daysSincePurchase <= 30) abc = 'A';
+          else if (daysSincePurchase <= 90) abc = 'B';
 
           return {
             id: rawId,
@@ -361,7 +373,8 @@ const App: React.FC = () => {
             rep3: getVal(cols, ['rep 3', 'rep3']) || standardRep,
             supervisor: getVal(cols, ['supervisor', 'setor', 'gerente']) || 'GERAL',
             population: parseInt(getVal(cols, ['habitantes', 'populacao']).replace(/\D/g, '') || '0', 10),
-            status: status
+            status: status,
+            abc: abc
           };
         }).filter(r => r !== null) as ClientRecord[];
 
@@ -464,6 +477,9 @@ const App: React.FC = () => {
             setUserAccounts(newAccounts);
             localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(newAccounts));
           }}
+          onConfigSave={(url, key) => {
+            supabaseService.updateConfig(url, key);
+          }}
         />
       </>
     );
@@ -505,6 +521,9 @@ const App: React.FC = () => {
         onSave={(newAccounts) => {
           setUserAccounts(newAccounts);
           localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(newAccounts));
+        }}
+        onConfigSave={(url, key) => {
+          supabaseService.updateConfig(url, key);
         }}
       />
 

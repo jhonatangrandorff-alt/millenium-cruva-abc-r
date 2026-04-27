@@ -25,6 +25,7 @@ export interface ClientRecord {
   supervisor: string; // Setor / Supervisor
   population: number;
   status: ClientStatus; // Situação do Cliente
+  abc: 'A' | 'B' | 'C'; // Curva ABC
 }
 
 export interface RepViewRow {
@@ -33,6 +34,9 @@ export interface RepViewRow {
   active: number;
   semiActive: number;
   inactive: number;
+  a: number;
+  b: number;
+  c: number;
   total: number;
   population: number;
 }
@@ -42,6 +46,9 @@ export interface CityViewRow {
   active: number;
   semiActive: number;
   inactive: number;
+  a: number;
+  b: number;
+  c: number;
   total: number;
 }
 

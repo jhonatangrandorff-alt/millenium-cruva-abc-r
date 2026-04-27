@@ -44,7 +44,8 @@ const ClientListModal: React.FC<ClientListModalProps> = ({ isOpen, onClose, titl
         client.city.toLowerCase().includes(lowerTerm) ||
         client.neighborhood.toLowerCase().includes(lowerTerm) ||
         client.representativeName.toLowerCase().includes(lowerTerm) ||
-        client.status.toLowerCase().includes(lowerTerm)
+        client.status.toLowerCase().includes(lowerTerm) ||
+        (client.abc || '').toLowerCase().includes(lowerTerm)
       );
     }
 
@@ -73,7 +74,7 @@ const ClientListModal: React.FC<ClientListModalProps> = ({ isOpen, onClose, titl
     if (!processedClients || processedClients.length === 0) return;
 
     const headers = [
-      'Código', 'Razão Social', 'Fantasia', 'CNPJ', 'Cidade/UF', 'Bairro', 'Ramo', 'Ult. Comp', 'Status', 'Representante'
+      'Código', 'Razão Social', 'Fantasia', 'CNPJ', 'Cidade/UF', 'Bairro', 'Ramo', 'Ult. Comp', 'Status', 'Curva ABC', 'Representante'
     ];
 
     const csvContent = [
@@ -89,6 +90,7 @@ const ClientListModal: React.FC<ClientListModalProps> = ({ isOpen, onClose, titl
           client.activity,
           client.daysSincePurchase,
           client.status,
+          client.abc || 'C',
           client.representativeName
         ];
 
@@ -183,6 +185,7 @@ const ClientListModal: React.FC<ClientListModalProps> = ({ isOpen, onClose, titl
                 {/* Renamed 'Dias' to 'Ult. Comp', Removed Date column */}
                 {renderHeader('Ult. Comp', 'daysSincePurchase', 'center')}
                 {renderHeader('Status', 'status', 'center')}
+                {renderHeader('ABC', 'abc', 'center')}
                 {renderHeader('Representante', 'representativeName')}
               </tr>
             </thead>
@@ -203,15 +206,15 @@ const ClientListModal: React.FC<ClientListModalProps> = ({ isOpen, onClose, titl
                       {client.daysSincePurchase}
                     </span>
                   </td>
-                  <td className="p-3 text-center whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-md text-xs font-bold border ${client.status === 'Ativo' ? 'bg-green-50 text-green-700 border-green-200' :
-                        client.status === 'Semi-Ativo' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                          'bg-red-50 text-red-700 border-red-200'
-                      }`}>
-                      {client.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-gray-600">{client.representativeName}</td>
+                    <td className="p-3 text-center whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${client.abc === 'A' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                          client.abc === 'B' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                            'bg-amber-100 text-amber-800 border-amber-200'
+                        }`}>
+                        {client.abc || 'C'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-gray-600">{client.representativeName}</td>
                 </tr>
               ))}
               {processedClients.length === 0 && (

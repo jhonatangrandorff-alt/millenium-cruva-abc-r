@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserAccount } from '../types';
-import { supabaseService } from '../services/supabaseService';
+import { supabaseService, supabase } from '../services/supabaseService';
 
 interface AdminSettingsModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface AdminSettingsModalProps {
   supervisors: string[];
   userAccounts: UserAccount[];
   onSave: (accounts: UserAccount[]) => void;
+  onConfigSave?: (url: string, key: string) => void;
 }
 
 const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
@@ -34,6 +35,10 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newSectors, setNewSectors] = useState<string[]>(['GERAL']);
+
+  // Supabase Config State
+  const [sbUrl, setSbUrl] = useState(() => localStorage.getItem('MILLENIUM_SB_URL') || '');
+  const [sbKey, setSbKey] = useState(() => localStorage.getItem('MILLENIUM_SB_KEY') || '');
 
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,6 +109,11 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   };
 
   const handleSave = () => {
+    if (onConfigSave) {
+      onConfigSave(sbUrl, sbKey);
+    }
+    localStorage.setItem('MILLENIUM_SB_URL', sbUrl);
+    localStorage.setItem('MILLENIUM_SB_KEY', sbKey);
     onClose();
   };
 
@@ -193,6 +203,37 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                 </button>
               </div>
 
+              <div className="mb-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <h4 className="font-bold text-emerald-900 mb-4 flex items-center gap-2">
+                  <i className="fas fa-cloud"></i> Configuração da Nuvem (Supabase)
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1 ml-1">URL do Projeto</label>
+                    <input
+                      type="text"
+                      value={sbUrl}
+                      onChange={e => setSbUrl(e.target.value)}
+                      placeholder="https://xyz.supabase.co"
+                      className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1 ml-1">Chave de API (Anon Key)</label>
+                    <input
+                      type="password"
+                      value={sbKey}
+                      onChange={e => setSbKey(e.target.value)}
+                      placeholder="eyJhbGciOiJIUzI1Ni..."
+                      className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-mono"
+                    />
+                  </div>
+                  <p className="text-[9px] text-emerald-600 italic">
+                    * Estas chaves são salvas localmente e usadas para sincronizar os dados. Se deixadas em branco, o sistema usará as chaves padrão do código.
+                  </p>
+                </div>
+              </div>
+
               <h4 className="font-bold text-gray-700 mb-4 px-2">Usuários Cadastrados</h4>
               <div className="space-y-3">
                 {accounts.length === 0 ? (
@@ -237,7 +278,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                   onClick={async () => {
                     if (confirm("TEM CERTEZA? Isso apagará todos os clientes da nuvem permanentemente.")) {
                       try {
-                        const { error } = await (supabaseService as any).supabase
+                        const { error } = await supabase
                           .from('base_oficial_millenium')
                           .delete()
                           .neq('id', '0'); 
