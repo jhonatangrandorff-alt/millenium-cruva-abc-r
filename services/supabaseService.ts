@@ -90,6 +90,7 @@ export const supabaseService = {
                   // Mapeamento das colunas customizadas do banco de dados do cliente
                   const mappedId = String(r['Código'] || r.id);
                   const mappedSocialName = String(r['Razão Social / Nome'] || r.socialName || 'NOME NAO INFORMADO');
+                  const mappedFantasyName = String(r['Fantasia'] || r['Nome Fantasia'] || r.fantasyName || '');
                   
                   const days = r.daysSincePurchase || 0;
                   const calculatedAbc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
@@ -98,6 +99,7 @@ export const supabaseService = {
                     ...r,
                     id: mappedId,
                     socialName: mappedSocialName,
+                    fantasyName: mappedFantasyName,
                     abc: calculatedAbc
                   } as ClientRecord;
                 });
@@ -135,13 +137,14 @@ export const supabaseService = {
       const chunks = [];
       for (let i = 0; i < base_oficial_millenium.length; i += BATCH_SIZE) {
         const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
-          // Remover abc e fantasyName que não existem na tabela
+          // Remover apenas abc que não existe na tabela
           const { abc, fantasyName, id, socialName, ...rest } = c;
-          // Mapear de volta para as colunas do banco
+          // Mapear de volta para as colunas customizadas do banco
           return {
             ...rest,
             'Código': id,
-            'Razão Social / Nome': socialName
+            'Razão Social / Nome': socialName,
+            'Fantasia': fantasyName // A coluna no banco provavelmente se chama Fantasia
           };
         });
         chunks.push(chunk);
