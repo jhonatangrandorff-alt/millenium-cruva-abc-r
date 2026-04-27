@@ -176,9 +176,6 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
       'Ativo': row.active,
       'Semi-ativo': row.semiActive,
       'Inativo': row.inactive,
-      'Curva A': row.a,
-      'Curva B': row.b,
-      'Curva C': row.c,
       'Total': row.total,
       'Habitantes': row.population
     }));
@@ -311,9 +308,6 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
               >
                 Atend. {renderSortIcon('atendimento')}
               </th>
-              <th className="text-center p-3 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-emerald-700/50 w-[10%]" onClick={() => handleSort('a')}>A {renderSortIcon('a')}</th>
-              <th className="text-center p-3 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-700/50 w-[10%]" onClick={() => handleSort('b')}>B {renderSortIcon('b')}</th>
-              <th className="text-center p-3 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-amber-700/50 w-[10%]" onClick={() => handleSort('c')}>C {renderSortIcon('c')}</th>
               <th 
                 className="text-right p-3 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-gray-800 w-[15%]"
                 onClick={() => handleSort('population')}
@@ -325,7 +319,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           <tbody>
             {tableData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-0 text-center text-gray-400 bg-gray-50/50">
+                <td colSpan={3} className="p-0 text-center text-gray-400 bg-gray-50/50">
                   {!selectedRep ? (
                     <div className="p-12 animate-fade-in">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-10">
@@ -380,7 +374,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
               <>
                 {paddingTop > 0 && (
                   <tr style={{ height: `${paddingTop}px` }}>
-                    <td colSpan={6} />
+                    <td colSpan={3} />
                   </tr>
                 )}
                 {virtualItems.map((index) => {
@@ -399,15 +393,6 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                              {row.active + row.semiActive}
                            </button>
                         ) : <span className="text-gray-300">-</span>}
-                      </td>
-                      <td className="p-3 px-1 text-center bg-emerald-50/10">
-                        {row.a > 0 ? <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">{row.a}</span> : <span className="text-gray-300 text-[10px]">-</span>}
-                      </td>
-                      <td className="p-3 px-1 text-center bg-blue-50/10">
-                        {row.b > 0 ? <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">{row.b}</span> : <span className="text-gray-300 text-[10px]">-</span>}
-                      </td>
-                      <td className="p-3 px-1 text-center bg-amber-50/10">
-                        {row.c > 0 ? <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">{row.c}</span> : <span className="text-gray-300 text-[10px]">-</span>}
                       </td>
                       <td className="p-3 px-4 text-right text-gray-700 font-bold text-sm">
                         {row.population.toLocaleString('pt-BR')}
@@ -429,9 +414,6 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
               <td className="p-4 text-center bg-blue-600 text-white text-lg border-x border-white/10 shadow-inner">
                 {(totals.active + totals.semi).toLocaleString('pt-BR')}
               </td>
-              <td className="p-4 text-center bg-emerald-700 text-white text-sm border-x border-white/10">{totals.a}</td>
-              <td className="p-4 text-center bg-blue-700 text-white text-sm border-x border-white/10">{totals.b}</td>
-              <td className="p-4 text-center bg-amber-700 text-white text-sm border-x border-white/10">{totals.c}</td>
               <td className="p-4 text-right bg-gray-900 text-white text-lg">{totals.pop.toLocaleString('pt-BR')}</td>
             </tr>
           </tfoot>

@@ -179,9 +179,6 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
       'Ativo': row.active,
       'Semi-ativo': row.semiActive,
       'Inativo': row.inactive,
-      'Curva A': row.a,
-      'Curva B': row.b,
-      'Curva C': row.c,
       'Total Geral': row.total
     }));
     onExport(csvData, `Status_Cidade_${selectedCity.replace(/ - /g, '_')}_${startDate}_${endDate}`);
@@ -346,10 +343,6 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
               >
                 Inat. {renderSortIcon('inactive')}
               </th>
-              {/* ABC Columns */}
-              <th className="bg-emerald-700 text-center p-4 w-[8%] cursor-pointer hover:bg-emerald-600 transition-colors select-none text-xs" onClick={() => handleSort('a')}>A {renderSortIcon('a')}</th>
-              <th className="bg-blue-600 text-center p-4 w-[8%] cursor-pointer hover:bg-blue-500 transition-colors select-none text-xs" onClick={() => handleSort('b')}>B {renderSortIcon('b')}</th>
-              <th className="bg-amber-600 text-center p-4 w-[8%] cursor-pointer hover:bg-amber-500 transition-colors select-none text-xs" onClick={() => handleSort('c')}>C {renderSortIcon('c')}</th>
 
               <th 
                 className="bg-gray-900 text-center p-4 w-[15%] cursor-pointer hover:bg-gray-800 transition-colors select-none"
@@ -361,7 +354,7 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
           </thead>
           <tbody>
             {tableData.length === 0 ? (
-               <tr><td colSpan={8} className="p-8 text-center text-gray-500 bg-gray-50">
+               <tr><td colSpan={5} className="p-8 text-center text-gray-500 bg-gray-50">
                  {selectedCity ? "Nenhum dado para este período" : "Selecione uma cidade para visualizar os dados"}
                </td></tr>
             ) : (
@@ -413,17 +406,6 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
                         ) : <span className="text-gray-300">-</span>}
                       </td>
 
-                      {/* ABC Cells */}
-                      <td className="p-3 px-1 text-center border-r border-gray-100 bg-emerald-50/10">
-                        {row.a > 0 ? <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">{row.a}</span> : <span className="text-gray-300">-</span>}
-                      </td>
-                      <td className="p-3 px-1 text-center border-r border-gray-100 bg-blue-50/10">
-                        {row.b > 0 ? <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">{row.b}</span> : <span className="text-gray-300">-</span>}
-                      </td>
-                      <td className="p-3 px-1 text-center border-r border-gray-100 bg-amber-50/10">
-                        {row.c > 0 ? <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">{row.c}</span> : <span className="text-gray-300">-</span>}
-                      </td>
-
                       
                       {/* Total Cell */}
                       <td className="p-3 px-4 text-center font-bold text-gray-700">
@@ -453,9 +435,6 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
               <td className="bg-green-600 text-white p-4 text-center border-x border-white/10">{totals.active}</td>
               <td className="bg-orange-500 text-white p-4 text-center border-x border-white/10">{totals.semi}</td>
               <td className="bg-red-700 text-white p-4 text-center border-x border-white/10">{totals.inactive}</td>
-              <td className="bg-emerald-800 text-white p-4 text-center text-xs border-x border-white/10">{totals.a}</td>
-              <td className="bg-blue-800 text-white p-4 text-center text-xs border-x border-white/10">{totals.b}</td>
-              <td className="bg-amber-800 text-white p-4 text-center text-xs border-x border-white/10">{totals.c}</td>
               <td className="bg-gray-900 text-white p-4 text-center">{totals.total}</td>
             </tr>
           </tfoot>
