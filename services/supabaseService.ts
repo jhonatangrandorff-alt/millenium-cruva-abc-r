@@ -8,17 +8,18 @@ export interface SupabaseConfig {
 }
 
 // Inicializar cliente Global com chaves de produção (Blindagem de Conexão)
-const globalUrl = import.meta.env.VITE_SUPABASE_URL || 'https://acvpejgyqondqwsjbwaa.supabase.co';
-const globalKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjdnBlamd5cW9uZHF3c2pid2FhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwNzg0MTgsImV4cCI6MjA5MjYxNDQxOH0.o0-gPxndIo9Zsi_uQkavDOKdtBPEaCWEWBFIhyCvrcI';
+// INICIALIZAÇÃO FORÇADA (Ignora variáveis da Vercel para garantir conexão Master v5)
+const globalUrl = 'https://acvpejgyqondqwsjbwaa.supabase.co';
+const globalKey = 'sb_publishable_Ln6v8O62FZFOix_pjwtR2w_oEI0lF2J';
 
-export const supabase = createClient(globalUrl, globalKey);
+export let supabase = createClient(globalUrl, globalKey);
 
 // Campos que existem na tabela 'base_oficial_millenium' do Supabase para evitar erro de coluna inexistente
 const VALID_CLIENT_COLUMNS = [
   'id', 'socialName', 'fantasyName', 'cnpj', 'ie', 'city', 'state', 
   'address', 'neighborhood', 'cep', 'activity', 'group', 
   'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
-  'representativeName', 'rep3', 'supervisor', 'population', 'status'
+  'representativeName', 'rep3', 'supervisor', 'population', 'status' // 'abc' removido temporariamente para evitar erro de coluna
 ];
 
 const sanitizeClient = (client: any) => {
@@ -38,6 +39,12 @@ const sanitizeClient = (client: any) => {
 };
 
 export const supabaseService = {
+  updateConfig: (url: string, key: string) => {
+    if (url && key) {
+      supabase = createClient(url, key);
+    }
+  },
+
   // Busca todos os clientes do Supabase
   fetchClients: async (config?: SupabaseConfig, onProgress?: (current: number, total: number) => void): Promise<ClientRecord[]> => {
     const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
@@ -77,8 +84,24 @@ export const supabaseService = {
               .range(start, end)
               .then(({ data, error }) => {
                 if (error) throw error;
-                const records = (data as any[]).map(r => {
-                  return r as ClientRecord;
+                const records = (data as any[])
+                  .filter(r => r['Código'] || r.id) // Remove linhas vazias corrompidas do CSV
+                  .map(r => {
+                  // Mapeamento das colunas customizadas do banco de dados do cliente
+                  const mappedId = String(r['Código'] || r.id);
+                  const mappedSocialName = String(r['Razão Social / Nome'] || r.socialName || 'NOME NAO INFORMADO');
+                  const mappedFantasyName = String(r['Fantasia'] || r['Nome Fantasia'] || r.fantasyName || '');
+                  
+                  const days = r.daysSincePurchase || 0;
+                  const calculatedAbc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
+                  
+                  return {
+                    ...r,
+                    id: mappedId,
+                    socialName: mappedSocialName,
+                    fantasyName: mappedFantasyName,
+                    abc: calculatedAbc
+                  } as ClientRecord;
                 });
                 loadedCount += records.length;
                 if (onProgress) onProgress(loadedCount, total);
@@ -108,26 +131,35 @@ export const supabaseService = {
     }
 
     const BATCH_SIZE = 150;
-    const CONCURRENCY = 3; // Envia 3 lotes simultâneos
+    const CONCURRENCY = 3; 
     
     try {
       const chunks = [];
       for (let i = 0; i < base_oficial_millenium.length; i += BATCH_SIZE) {
-        chunks.push(base_oficial_millenium.slice(i, i + BATCH_SIZE).map(sanitizeClient));
+        const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
+          // Remover abc e fantasyName que não existem na tabela
+          const { abc, fantasyName, id, socialName, ...rest } = c;
+          // Mapear de volta para as colunas customizadas do banco
+          return {
+            ...rest,
+            'Código': id,
+            'Razão Social / Nome': socialName
+          };
+        });
+        chunks.push(chunk);
       }
 
       for (let i = 0; i < chunks.length; i += CONCURRENCY) {
         const batch = chunks.slice(i, i + CONCURRENCY);
-        await Promise.all(batch.map(chunk => 
-          client
-            .from('base_oficial_millenium')
-            .upsert(chunk, { onConflict: 'id' })
-            .then(({ error }) => {
-              if (error) throw error;
-            })
-        ));
+        await Promise.all(batch.map(async (chunk) => {
+          const ids = chunk.map(c => c['Código']);
+          // Delete manual por falta de Primary Key no banco do cliente
+          await client.from('base_oficial_millenium').delete().in('Código', ids);
+          
+          const { error } = await client.from('base_oficial_millenium').insert(chunk);
+          if (error) throw error;
+        }));
         
-        // Pequena pausa para estabilidade
         await new Promise(resolve => setTimeout(resolve, 50));
       }
     } catch (error: any) {

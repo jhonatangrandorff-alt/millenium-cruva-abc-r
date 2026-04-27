@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserAccount } from '../types';
-import { supabaseService } from '../services/supabaseService';
+import { supabaseService, supabase } from '../services/supabaseService';
 
 interface AdminSettingsModalProps {
   isOpen: boolean;
@@ -34,6 +34,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newSectors, setNewSectors] = useState<string[]>(['GERAL']);
+
 
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,6 +194,8 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                 </button>
               </div>
 
+              {/* Configuração da Nuvem (Supabase) removida para forçar a Blindagem de Conexão Master v5 */}
+
               <h4 className="font-bold text-gray-700 mb-4 px-2">Usuários Cadastrados</h4>
               <div className="space-y-3">
                 {accounts.length === 0 ? (
@@ -237,7 +240,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                   onClick={async () => {
                     if (confirm("TEM CERTEZA? Isso apagará todos os clientes da nuvem permanentemente.")) {
                       try {
-                        const { error } = await (supabaseService as any).supabase
+                        const { error } = await supabase
                           .from('base_oficial_millenium')
                           .delete()
                           .neq('id', '0'); 

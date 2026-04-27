@@ -128,6 +128,9 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
           active: 0,
           semiActive: 0,
           inactive: 0,
+          a: 0,
+          b: 0,
+          c: 0,
           total: 0
         });
       }
@@ -137,6 +140,10 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
       else if (item.status === ClientStatus.SEMI_ACTIVE) entry.semiActive++;
       else if (item.status === ClientStatus.INACTIVE) entry.inactive++;
       
+      if (item.abc === 'A') entry.a++;
+      else if (item.abc === 'B') entry.b++;
+      else if (item.abc === 'C') entry.c++;
+
       entry.total++;
     });
 
@@ -158,8 +165,11 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
     active: acc.active + curr.active,
     semi: acc.semi + curr.semiActive,
     inactive: acc.inactive + curr.inactive,
+    a: acc.a + curr.a,
+    b: acc.b + curr.b,
+    c: acc.c + curr.c,
     total: acc.total + curr.total
-  }), { active: 0, semi: 0, inactive: 0, total: 0 });
+  }), { active: 0, semi: 0, inactive: 0, a: 0, b: 0, c: 0, total: 0 });
 
   const activeRepsCount = tableData.length;
 
@@ -316,29 +326,29 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
                 Representante (Rep 3) {renderSortIcon('representativeName')}
               </th>
               <th 
-                className="bg-green-600 text-center p-4 w-[15%] cursor-pointer hover:bg-green-500 transition-colors select-none"
+                className="bg-green-600 text-center p-4 w-[12%] cursor-pointer hover:bg-green-500 transition-colors select-none"
                 onClick={() => handleSort('active')}
               >
                 Ativo {renderSortIcon('active')}
               </th>
               <th 
-                className="bg-orange-400 text-center p-4 w-[15%] cursor-pointer hover:bg-orange-300 transition-colors select-none"
+                className="bg-orange-400 text-center p-4 w-[12%] cursor-pointer hover:bg-orange-300 transition-colors select-none"
                 onClick={() => handleSort('semiActive')}
               >
-                Semi-Ativo {renderSortIcon('semiActive')}
+                Semi {renderSortIcon('semiActive')}
               </th>
               <th 
-                className="bg-red-600 text-center p-4 w-[15%] cursor-pointer hover:bg-red-500 transition-colors select-none"
+                className="bg-red-600 text-center p-4 w-[12%] cursor-pointer hover:bg-red-500 transition-colors select-none"
                 onClick={() => handleSort('inactive')}
               >
-                Inativo {renderSortIcon('inactive')}
+                Inat. {renderSortIcon('inactive')}
               </th>
 
               <th 
                 className="bg-gray-900 text-center p-4 w-[15%] cursor-pointer hover:bg-gray-800 transition-colors select-none"
                 onClick={() => handleSort('total')}
               >
-                Total Geral {renderSortIcon('total')}
+                Total {renderSortIcon('total')}
               </th>
             </tr>
           </thead>
@@ -422,31 +432,10 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
           <tfoot className="sticky bottom-0 z-10">
             <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
               <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
-              <td 
-                className="p-4 text-center bg-green-50/50 text-green-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-green-100/50 transition-colors"
-                onClick={() => onDrillDown({ city: drillCity, status: ClientStatus.ACTIVE })}
-              >
-                {totals.active.toLocaleString('pt-BR')}
-              </td>
-              <td 
-                className="p-4 text-center bg-orange-50/50 text-orange-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-orange-100/50 transition-colors"
-                onClick={() => onDrillDown({ city: drillCity, status: ClientStatus.SEMI_ACTIVE })}
-              >
-                {totals.semi.toLocaleString('pt-BR')}
-              </td>
-              <td 
-                className="p-4 text-center bg-red-50/50 text-red-700 text-lg border-x border-gray-50 cursor-pointer hover:bg-red-100/50 transition-colors"
-                onClick={() => onDrillDown({ city: drillCity, status: ClientStatus.INACTIVE })}
-              >
-                {totals.inactive.toLocaleString('pt-BR')}
-              </td>
-
-              <td 
-                className="p-4 text-center bg-blue-50/50 text-blue-900 text-xl border-x border-gray-50 cursor-pointer hover:bg-blue-100/50 transition-colors"
-                onClick={() => onDrillDown({ city: drillCity })}
-              >
-                {totals.total.toLocaleString('pt-BR')}
-              </td>
+              <td className="bg-green-600 text-white p-4 text-center border-x border-white/10">{totals.active}</td>
+              <td className="bg-orange-500 text-white p-4 text-center border-x border-white/10">{totals.semi}</td>
+              <td className="bg-red-700 text-white p-4 text-center border-x border-white/10">{totals.inactive}</td>
+              <td className="bg-gray-900 text-white p-4 text-center">{totals.total}</td>
             </tr>
           </tfoot>
         </table>

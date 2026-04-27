@@ -119,6 +119,9 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           active: 0,
           semiActive: 0,
           inactive: 0,
+          a: 0,
+          b: 0,
+          c: 0,
           total: 0,
           population: item.population
         });
@@ -129,6 +132,10 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
       else if (item.status === ClientStatus.SEMI_ACTIVE) entry.semiActive++;
       else if (item.status === ClientStatus.INACTIVE) entry.inactive++;
       
+      if (item.abc === 'A') entry.a++;
+      else if (item.abc === 'B') entry.b++;
+      else if (item.abc === 'C') entry.c++;
+
       entry.total++;
     });
 
@@ -156,9 +163,12 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
     active: acc.active + curr.active,
     semi: acc.semi + curr.semiActive,
     inactive: acc.inactive + curr.inactive,
+    a: acc.a + curr.a,
+    b: acc.b + curr.b,
+    c: acc.c + curr.c,
     total: acc.total + curr.total,
     pop: acc.pop + curr.population
-  }), { active: 0, semi: 0, inactive: 0, total: 0, pop: 0 });
+  }), { active: 0, semi: 0, inactive: 0, a: 0, b: 0, c: 0, total: 0, pop: 0 });
 
   const handleExport = () => {
     const csvData = tableData.map(row => ({
@@ -293,13 +303,13 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                 Cidades/UF {renderSortIcon('city')}
               </th>
               <th 
-                className="text-center p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50 w-[25%]"
+                className="text-center p-3 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-blue-900/50 w-[15%]"
                 onClick={() => handleSort('atendimento')}
               >
-                Atendimento (Ativo + Semi) {renderSortIcon('atendimento')}
+                Atend. {renderSortIcon('atendimento')}
               </th>
               <th 
-                className="text-right p-4 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-gray-800 w-[25%]"
+                className="text-right p-3 font-semibold cursor-pointer hover:bg-white/10 transition-colors select-none bg-gray-800 w-[15%]"
                 onClick={() => handleSort('population')}
               >
                 Habitantes {renderSortIcon('population')}
@@ -309,7 +319,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           <tbody>
             {tableData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-0 text-center text-gray-400 bg-gray-50/50">
+                <td colSpan={3} className="p-0 text-center text-gray-400 bg-gray-50/50">
                   {!selectedRep ? (
                     <div className="p-12 animate-fade-in">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-10">
@@ -364,7 +374,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
               <>
                 {paddingTop > 0 && (
                   <tr style={{ height: `${paddingTop}px` }}>
-                    <td colSpan={6} />
+                    <td colSpan={3} />
                   </tr>
                 )}
                 {virtualItems.map((index) => {
@@ -377,14 +387,14 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                       <td className="p-3 px-4 text-center">
                         {(row.active + row.semiActive) > 0 ? (
                            <button 
-                             onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: 'Ativo+Semi' as any })} 
-                             className="px-6 py-1.5 rounded-full bg-blue-100 text-blue-900 font-black text-base hover:bg-blue-200 transition-all transform hover:scale-105 shadow-md border border-blue-200"
+                             onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: [ClientStatus.ACTIVE, ClientStatus.SEMI_ACTIVE] as any })} 
+                             className="px-3 py-1 rounded-full bg-blue-100 text-blue-900 font-black text-xs hover:bg-blue-200 transition-all transform hover:scale-105 shadow-sm border border-blue-200"
                            >
                              {row.active + row.semiActive}
                            </button>
                         ) : <span className="text-gray-300">-</span>}
                       </td>
-                      <td className="p-3 px-4 text-right text-gray-700 font-bold text-base">
+                      <td className="p-3 px-4 text-right text-gray-700 font-bold text-sm">
                         {row.population.toLocaleString('pt-BR')}
                       </td>
                     </tr>
@@ -401,8 +411,10 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           <tfoot className="sticky bottom-0 z-10">
             <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
               <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
-              <td className="p-4 text-center bg-blue-50/50 text-blue-900 text-2xl border-x border-gray-50">{(totals.active + totals.semi).toLocaleString('pt-BR')}</td>
-              <td className="p-4 text-right bg-gray-50 text-gray-800 text-xl">{totals.pop.toLocaleString('pt-BR')}</td>
+              <td className="p-4 text-center bg-blue-600 text-white text-lg border-x border-white/10 shadow-inner">
+                {(totals.active + totals.semi).toLocaleString('pt-BR')}
+              </td>
+              <td className="p-4 text-right bg-gray-900 text-white text-lg">{totals.pop.toLocaleString('pt-BR')}</td>
             </tr>
           </tfoot>
         </table>
