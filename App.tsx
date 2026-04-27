@@ -105,9 +105,13 @@ const App: React.FC = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDataSaved]);
 
-  // Removido o carregamento de chaves do localStorage para forçar o uso da conexão Master v5
-  // Blindagem de conexão ativada
-
+  useEffect(() => {
+    const savedUrl = localStorage.getItem('MILLENIUM_SB_URL');
+    const savedKey = localStorage.getItem('MILLENIUM_SB_KEY');
+    if (savedUrl && savedKey) {
+      supabaseService.updateConfig(savedUrl, savedKey);
+    }
+  }, []);
 
   const [sbConfig] = useState<SupabaseConfig>(() => ({ url: '', key: '' }));
 
