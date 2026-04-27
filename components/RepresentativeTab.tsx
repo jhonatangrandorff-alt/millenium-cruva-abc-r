@@ -387,7 +387,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
                       <td className="p-3 px-4 text-center">
                         {(row.active + row.semiActive) > 0 ? (
                            <button 
-                             onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: 'Ativo+Semi' as any })} 
+                             onClick={() => onDrillDown({ rep: selectedRep, city: row.city, status: [ClientStatus.ACTIVE, ClientStatus.SEMI_ACTIVE] as any })} 
                              className="px-3 py-1 rounded-full bg-blue-100 text-blue-900 font-black text-xs hover:bg-blue-200 transition-all transform hover:scale-105 shadow-sm border border-blue-200"
                            >
                              {row.active + row.semiActive}
