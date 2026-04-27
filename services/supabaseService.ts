@@ -19,7 +19,7 @@ const VALID_CLIENT_COLUMNS = [
   'id', 'socialName', 'fantasyName', 'cnpj', 'ie', 'city', 'state', 
   'address', 'neighborhood', 'cep', 'activity', 'group', 
   'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
-  'representativeName', 'rep3', 'supervisor', 'population', 'status', 'abc'
+  'representativeName', 'rep3', 'supervisor', 'population', 'status' // 'abc' removido temporariamente para evitar erro de coluna
 ];
 
 const sanitizeClient = (client: any) => {
