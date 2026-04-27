@@ -84,10 +84,12 @@ export const supabaseService = {
               .range(start, end)
               .then(({ data, error }) => {
                 if (error) throw error;
-                const records = (data as any[]).map(r => {
+                const records = (data as any[])
+                  .filter(r => r['Código'] || r.id) // Remove linhas vazias corrompidas do CSV
+                  .map(r => {
                   // Mapeamento das colunas customizadas do banco de dados do cliente
-                  const mappedId = r['Código'] || r.id;
-                  const mappedSocialName = r['Razão Social / Nome'] || r.socialName;
+                  const mappedId = String(r['Código'] || r.id);
+                  const mappedSocialName = String(r['Razão Social / Nome'] || r.socialName || 'NOME NAO INFORMADO');
                   
                   const days = r.daysSincePurchase || 0;
                   const calculatedAbc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
