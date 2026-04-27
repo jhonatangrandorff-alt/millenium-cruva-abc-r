@@ -203,8 +203,8 @@ const ClientListModal: React.FC<ClientListModalProps> = ({ isOpen, onClose, titl
                     </span>
                   </td>
                   <td className="p-3 text-center">
-                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${client.status === 'ATIVO' ? 'bg-green-100 text-green-800 border-green-200' :
-                        client.status === 'SEMI-ATIVO' ? 'bg-orange-100 text-orange-800 border-orange-200' :
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${client.status === 'Ativo' || client.status.toUpperCase() === 'ATIVO' ? 'bg-green-100 text-green-800 border-green-200' :
+                        client.status === 'Semi-Ativo' || client.status.toUpperCase() === 'SEMI-ATIVO' ? 'bg-[#f5f5dc] text-[#8b7355] border-[#eedc82]' :
                           'bg-red-100 text-red-800 border-red-200'
                       }`}>
                       {client.status}
