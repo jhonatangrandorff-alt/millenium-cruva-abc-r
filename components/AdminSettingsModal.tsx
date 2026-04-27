@@ -203,36 +203,7 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                 </button>
               </div>
 
-              <div className="mb-8 p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
-                <h4 className="font-bold text-emerald-900 mb-4 flex items-center gap-2">
-                  <i className="fas fa-cloud"></i> Configuração da Nuvem (Supabase)
-                </h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1 ml-1">URL do Projeto</label>
-                    <input
-                      type="text"
-                      value={sbUrl}
-                      onChange={e => setSbUrl(e.target.value)}
-                      placeholder="https://xyz.supabase.co"
-                      className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1 ml-1">Chave de API (Anon Key)</label>
-                    <input
-                      type="password"
-                      value={sbKey}
-                      onChange={e => setSbKey(e.target.value)}
-                      placeholder="eyJhbGciOiJIUzI1Ni..."
-                      className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-mono"
-                    />
-                  </div>
-                  <p className="text-[9px] text-emerald-600 italic">
-                    * Estas chaves são salvas localmente e usadas para sincronizar os dados. Se deixadas em branco, o sistema usará as chaves padrão do código.
-                  </p>
-                </div>
-              </div>
+              {/* Configuração da Nuvem (Supabase) removida para forçar a Blindagem de Conexão Master v5 */}
 
               <h4 className="font-bold text-gray-700 mb-4 px-2">Usuários Cadastrados</h4>
               <div className="space-y-3">
