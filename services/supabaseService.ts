@@ -85,12 +85,19 @@ export const supabaseService = {
               .then(({ data, error }) => {
                 if (error) throw error;
                 const records = (data as any[]).map(r => {
-                  // Fallback para calcular Curva ABC se não existir na coluna do banco
-                  if (!r.abc) {
-                    const days = r.daysSincePurchase || 0;
-                    r.abc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
-                  }
-                  return r as ClientRecord;
+                  // Mapeamento das colunas customizadas do banco de dados do cliente
+                  const mappedId = r['Código'] || r.id;
+                  const mappedSocialName = r['Razão Social / Nome'] || r.socialName;
+                  
+                  const days = r.daysSincePurchase || 0;
+                  const calculatedAbc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
+                  
+                  return {
+                    ...r,
+                    id: mappedId,
+                    socialName: mappedSocialName,
+                    abc: calculatedAbc
+                  } as ClientRecord;
                 });
                 loadedCount += records.length;
                 if (onProgress) onProgress(loadedCount, total);
@@ -120,26 +127,35 @@ export const supabaseService = {
     }
 
     const BATCH_SIZE = 150;
-    const CONCURRENCY = 3; // Envia 3 lotes simultâneos
+    const CONCURRENCY = 3; 
     
     try {
       const chunks = [];
       for (let i = 0; i < base_oficial_millenium.length; i += BATCH_SIZE) {
-        chunks.push(base_oficial_millenium.slice(i, i + BATCH_SIZE).map(sanitizeClient));
+        const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
+          // Remover abc e fantasyName que não existem na tabela
+          const { abc, fantasyName, id, socialName, ...rest } = c;
+          // Mapear de volta para as colunas do banco
+          return {
+            ...rest,
+            'Código': id,
+            'Razão Social / Nome': socialName
+          };
+        });
+        chunks.push(chunk);
       }
 
       for (let i = 0; i < chunks.length; i += CONCURRENCY) {
         const batch = chunks.slice(i, i + CONCURRENCY);
-        await Promise.all(batch.map(chunk => 
-          client
-            .from('base_oficial_millenium')
-            .upsert(chunk, { onConflict: 'id' })
-            .then(({ error }) => {
-              if (error) throw error;
-            })
-        ));
+        await Promise.all(batch.map(async (chunk) => {
+          const ids = chunk.map(c => c['Código']);
+          // Delete manual por falta de Primary Key no banco do cliente
+          await client.from('base_oficial_millenium').delete().in('Código', ids);
+          
+          const { error } = await client.from('base_oficial_millenium').insert(chunk);
+          if (error) throw error;
+        }));
         
-        // Pequena pausa para estabilidade
         await new Promise(resolve => setTimeout(resolve, 50));
       }
     } catch (error: any) {
