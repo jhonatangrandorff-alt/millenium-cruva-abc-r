@@ -473,9 +473,6 @@ const App: React.FC = () => {
             setUserAccounts(newAccounts);
             localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(newAccounts));
           }}
-          onConfigSave={(url, key) => {
-            supabaseService.updateConfig(url, key);
-          }}
         />
       </>
     );
@@ -517,9 +514,6 @@ const App: React.FC = () => {
         onSave={(newAccounts) => {
           setUserAccounts(newAccounts);
           localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(newAccounts));
-        }}
-        onConfigSave={(url, key) => {
-          supabaseService.updateConfig(url, key);
         }}
       />
 

@@ -9,7 +9,6 @@ interface AdminSettingsModalProps {
   supervisors: string[];
   userAccounts: UserAccount[];
   onSave: (accounts: UserAccount[]) => void;
-  onConfigSave?: (url: string, key: string) => void;
 }
 
 const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
@@ -36,9 +35,6 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [newSectors, setNewSectors] = useState<string[]>(['GERAL']);
 
-  // Supabase Config State
-  const [sbUrl, setSbUrl] = useState(() => localStorage.getItem('MILLENIUM_SB_URL') || '');
-  const [sbKey, setSbKey] = useState(() => localStorage.getItem('MILLENIUM_SB_KEY') || '');
 
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,11 +105,6 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   };
 
   const handleSave = () => {
-    if (onConfigSave) {
-      onConfigSave(sbUrl, sbKey);
-    }
-    localStorage.setItem('MILLENIUM_SB_URL', sbUrl);
-    localStorage.setItem('MILLENIUM_SB_KEY', sbKey);
     onClose();
   };
 
