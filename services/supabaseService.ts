@@ -9,8 +9,8 @@ export interface SupabaseConfig {
 
 // Inicializar cliente Global com chaves de produção (Blindagem de Conexão)
 // INICIALIZAÇÃO FORÇADA (Ignora variáveis da Vercel para garantir conexão Master v5)
-const globalUrl = 'https://nqrtrzfkryihlllzdlgw.supabase.co';
-const globalKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xcnRyemZrcnlpaGxsbHpkbGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0ODEyODQsImV4cCI6MjA4ODA1NzI4NH0.al_gpeQjLms0T1op8UyhdtaN7PJAaHxWGFPIx0ZJM_8';
+const globalUrl = 'https://acvpejgyqondqwsjbwaa.supabase.co';
+const globalKey = 'sb_publishable_Ln6v8O62FZFOix_pjwtR2w_oEI0lF2J';
 
 export let supabase = createClient(globalUrl, globalKey);
 
