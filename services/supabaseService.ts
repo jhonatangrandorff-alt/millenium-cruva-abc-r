@@ -137,13 +137,14 @@ export const supabaseService = {
       const chunks = [];
       for (let i = 0; i < base_oficial_millenium.length; i += BATCH_SIZE) {
         const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
-          // Remover abc e fantasyName que não existem na tabela
+          // Remover abc que não existe na tabela nativamente com esse nome
           const { abc, fantasyName, id, socialName, ...rest } = c;
           // Mapear de volta para as colunas customizadas do banco
           return {
             ...rest,
             'Código': id,
-            'Razão Social / Nome': socialName
+            'Razão Social / Nome': socialName,
+            'Fantasia': fantasyName || ''
           };
         });
         chunks.push(chunk);

@@ -411,10 +411,19 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
           <tfoot className="sticky bottom-0 z-10">
             <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
               <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
-              <td className="p-4 text-center bg-blue-600 text-white text-lg border-x border-white/10 shadow-inner">
+              <td 
+                className="p-4 text-center bg-blue-600 text-white text-lg border-x border-white/10 shadow-inner cursor-pointer hover:bg-blue-500 transition-colors"
+                onClick={() => selectedRep && onDrillDown({ rep: selectedRep, status: [ClientStatus.ACTIVE, ClientStatus.SEMI_ACTIVE] as any })}
+              >
                 {(totals.active + totals.semi).toLocaleString('pt-BR')}
               </td>
-              <td className="p-4 text-right bg-gray-900 text-white text-lg">{totals.pop.toLocaleString('pt-BR')}</td>
+              <td 
+                className="p-4 text-right bg-gray-900 text-white text-lg cursor-pointer hover:bg-gray-800 transition-colors"
+                onClick={() => selectedRep && onDrillDown({ rep: selectedRep })}
+                title="Ver todos os clientes do representante"
+              >
+                {totals.pop.toLocaleString('pt-BR')}
+              </td>
             </tr>
           </tfoot>
         </table>

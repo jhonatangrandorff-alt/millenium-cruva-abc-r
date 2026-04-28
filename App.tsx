@@ -313,9 +313,12 @@ const App: React.FC = () => {
 
           const rawId = getVal(cols, ['código', 'codigo', 'id', 'cod']);
           const name = getVal(cols, ['razão social / nome', 'razao social / nome', 'razão social', 'razao social', 'nome', 'social']);
+          const fantasia = getVal(cols, ['nome fantasia', 'fantasia']);
+          
+          const finalName = name || fantasia || 'NOME NAO INFORMADO';
 
           // Validação flexível: Se tem ID e não é uma linha de "Total" ou cabeçalho repetido
-          if (!rawId || rawId.toLowerCase().includes('total') || rawId.toLowerCase() === 'código' || !name) {
+          if (!rawId || rawId.toLowerCase().includes('total') || rawId.toLowerCase() === 'código') {
             return null;
           }
 
@@ -351,8 +354,8 @@ const App: React.FC = () => {
 
           return {
             id: rawId,
-            socialName: name,
-            fantasyName: getVal(cols, ['nome fantasia', 'fantasia']),
+            socialName: finalName,
+            fantasyName: fantasia,
             cnpj: getVal(cols, ['cnpj']),
             ie: getVal(cols, ['i. e.', 'ie']),
             city: getVal(cols, ['cidade']),

@@ -398,10 +398,30 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
           <tfoot className="sticky bottom-0 z-10">
             <tr className="bg-white text-gray-900 font-black border-t-2 border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-[60px]">
               <td className="p-4 bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider">Total Geral</td>
-              <td className="bg-green-600 text-white p-4 text-center border-x border-white/10">{totals.active}</td>
-              <td className="bg-orange-500 text-white p-4 text-center border-x border-white/10">{totals.semi}</td>
-              <td className="bg-red-700 text-white p-4 text-center border-x border-white/10">{totals.inactive}</td>
-              <td className="bg-gray-900 text-white p-4 text-center">{totals.total}</td>
+              <td 
+                className="bg-green-600 text-white p-4 text-center border-x border-white/10 cursor-pointer hover:bg-green-500 transition-colors"
+                onClick={() => selectedSupervisor && onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.ACTIVE })}
+              >
+                {totals.active}
+              </td>
+              <td 
+                className="bg-orange-500 text-white p-4 text-center border-x border-white/10 cursor-pointer hover:bg-orange-400 transition-colors"
+                onClick={() => selectedSupervisor && onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.SEMI_ACTIVE })}
+              >
+                {totals.semi}
+              </td>
+              <td 
+                className="bg-red-700 text-white p-4 text-center border-x border-white/10 cursor-pointer hover:bg-red-600 transition-colors"
+                onClick={() => selectedSupervisor && onDrillDown({ supervisor: selectedSupervisor, status: ClientStatus.INACTIVE })}
+              >
+                {totals.inactive}
+              </td>
+              <td 
+                className="bg-gray-900 text-white p-4 text-center cursor-pointer hover:bg-gray-800 transition-colors"
+                onClick={() => selectedSupervisor && onDrillDown({ supervisor: selectedSupervisor })}
+              >
+                {totals.total}
+              </td>
             </tr>
           </tfoot>
         </table>
