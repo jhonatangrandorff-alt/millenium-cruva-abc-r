@@ -240,10 +240,11 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                   onClick={async () => {
                     if (confirm("TEM CERTEZA? Isso apagará todos os clientes da nuvem permanentemente.")) {
                       try {
+                        // Usar 'Código' que é a coluna real do banco
                         const { error } = await supabase
                           .from('base_oficial_millenium')
                           .delete()
-                          .neq('id', '0'); 
+                          .neq('Código', 'FORCAR_DELETE_TOTAL_000'); 
                         if (error) throw error;
                         alert("Base de dados limpa com sucesso! Reiniciando...");
                         window.location.reload();

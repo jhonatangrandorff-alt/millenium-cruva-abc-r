@@ -131,9 +131,12 @@ export const supabaseService = {
       throw new Error("Não foi possível inicializar o cliente Supabase.");
     }
 
-    const BATCH_SIZE = 150;
-    const CONCURRENCY = 3; 
+    // Otimização para grandes volumes (35k+)
+    const BATCH_SIZE = 500;
+    const CONCURRENCY = 2; 
     
+    console.log(`Iniciando salvamento v2 de ${base_oficial_millenium.length} registros...`);
+
     try {
       // 0. Detectar colunas reais do banco para evitar crash (Fallback dinâmico)
       const { data: colSample } = await client.from('base_oficial_millenium').select('*').limit(1);
@@ -183,19 +186,20 @@ export const supabaseService = {
           
           // Delete manual por falta de Primary Key no banco do cliente
           const { error: delError } = await client.from('base_oficial_millenium').delete().in('Código', ids);
-          if (delError) console.warn("Erro ao deletar (pode ser ignorado se for novo):", delError);
+          if (delError) console.warn("Aviso no Delete v2:", delError.message);
           
           const { error } = await client.from('base_oficial_millenium').insert(chunk);
           if (error) {
-             console.error("Erro no INSERT Supabase:", error);
-             throw error;
+             console.error("ERRO CRÍTICO NO INSERT SUPABASE v2:", error);
+             throw new Error(`Falha ao inserir lote v2: ${error.message}`);
           }
         }));
         
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
+      console.log("Salvamento v2 concluído com sucesso.");
     } catch (error: any) {
-      console.error('Erro Supabase Save:', error);
+      console.error('Falha geral no salvamento Supabase v2:', error);
       throw error;
     }
   },
