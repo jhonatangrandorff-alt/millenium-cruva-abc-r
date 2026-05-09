@@ -29,17 +29,22 @@ const App: React.FC = () => {
   const [clientData, setClientData] = useState<ClientRecord[]>([]);
   const [dataSource, setDataSource] = useState<DataSource>('MOCK');
   const [userSectors, setUserSectors] = useState<string[] | null>(() => {
-    const saved = sessionStorage.getItem(USER_SECTORS_KEY);
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = sessionStorage.getItem(USER_SECTORS_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      console.error("Erro ao ler setores:", e);
+      return null;
+    }
   });
   const [userName, setUserName] = useState<string | null>(() => {
     return sessionStorage.getItem(USER_NAME_KEY);
   });
 
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
-    const saved = localStorage.getItem(USER_ACCOUNTS_KEY);
-    if (!saved) return [];
     try {
+      const saved = localStorage.getItem(USER_ACCOUNTS_KEY);
+      if (!saved) return [];
       const parsed = JSON.parse(saved);
       // Migration for old accounts that had 'sector' instead of 'sectors'
       return parsed.map((acc: any) => {
@@ -55,6 +60,7 @@ const App: React.FC = () => {
         };
       });
     } catch (e) {
+      console.error("Erro ao ler contas:", e);
       return [];
     }
   });
@@ -115,36 +121,42 @@ const App: React.FC = () => {
         const cloudData = await supabaseService.fetchClients(undefined, (current, total) => {
           setLoadingMsg(`Sincronizando: ${current.toLocaleString('pt-BR')} de ${total.toLocaleString('pt-BR')} registros...`);
         });
+        
         if (cloudData && cloudData.length > 0) {
           setClientData(cloudData);
           setDataSource('SUPABASE');
+          // Salva no banco local para modo offline
           await dbService.saveClients(cloudData);
           setIsLoading(false);
           return;
         }
 
-        // Se chegar aqui, a nuvem está vazia. Verificamos o banco local.
+        // Se chegar aqui, a nuvem está vazia ou falhou sem erro. Verificamos o banco local.
         const dbData = await dbService.getAllClients();
         if (dbData && dbData.length > 0) {
           setClientData(dbData);
           setDataSource('LOCAL_DB');
         } else {
-          // Se for a primeira vez e não houver nada, mostramos o Mock apenas para não ficar em branco
           setClientData(MOCK_DATA);
           setDataSource('MOCK');
         }
       } catch (error: any) {
         console.error("Erro crítico de carregamento:", error);
         // Tenta recuperar do banco local (IndexedDB)
-        const dbData = await dbService.getAllClients();
-        if (dbData && dbData.length > 0) {
-          setClientData(dbData);
-          setDataSource('LOCAL_DB');
-          alert("Aviso: Exibindo dados salvos em cache (Modo Offline). A conexão com a nuvem falhou.");
-        } else {
-           setClientData(MOCK_DATA);
-           setDataSource('MOCK');
-           alert(`Falha total na conexão: ${error.message}. Verifique sua internet.`);
+        try {
+          const dbData = await dbService.getAllClients();
+          if (dbData && dbData.length > 0) {
+            setClientData(dbData);
+            setDataSource('LOCAL_DB');
+            alert("Aviso: Exibindo dados salvos em cache (Modo Offline). A conexão com a nuvem falhou.");
+          } else {
+             setClientData(MOCK_DATA);
+             setDataSource('MOCK');
+             alert(`Falha total na conexão: ${error.message}. Verifique sua internet.`);
+          }
+        } catch (dbErr) {
+          setClientData(MOCK_DATA);
+          setDataSource('MOCK');
         }
       } finally {
         setIsLoading(false);

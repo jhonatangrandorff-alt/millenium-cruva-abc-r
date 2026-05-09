@@ -73,7 +73,7 @@ const RepresentativeTab: React.FC<RepresentativeTabProps> = ({ data, onExport, o
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return representatives;
     return representatives.filter(r => 
-      r.toLowerCase().includes(searchTerm.toLowerCase())
+      (r || "").toLowerCase().includes((searchTerm || "").toLowerCase())
     );
   }, [representatives, searchTerm]);
 

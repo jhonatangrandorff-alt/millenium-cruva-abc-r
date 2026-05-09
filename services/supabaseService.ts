@@ -16,10 +16,10 @@ export let supabase = createClient(globalUrl, globalKey);
 
 // Campos que existem na tabela 'base_oficial_millenium' do Supabase para evitar erro de coluna inexistente
 const VALID_CLIENT_COLUMNS = [
-  'id', 'socialName', 'fantasyName', 'cnpj', 'ie', 'city', 'state', 
+  'Código', 'Razão Social / Nome', 'Fantasia', 'cnpj', 'ie', 'city', 'state', 
   'address', 'neighborhood', 'cep', 'activity', 'group', 
   'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
-  'representativeName', 'rep3', 'supervisor', 'population', 'status' // 'abc' removido temporariamente para evitar erro de coluna
+  'representativeName', 'rep3', 'supervisor', 'population', 'status'
 ];
 
 const sanitizeClient = (client: any) => {
@@ -30,9 +30,9 @@ const sanitizeClient = (client: any) => {
     }
   });
 
-  // Garantir que socialName nunca seja null para evitar erro de constraint no banco
-  if (!sanitized.socialName) {
-    sanitized.socialName = sanitized.fantasyName || sanitized.id || 'NOME NAO INFORMADO';
+  // Garantir que a Razão Social nunca seja null para evitar erro de constraint no banco
+  if (!sanitized['Razão Social / Nome']) {
+    sanitized['Razão Social / Nome'] = sanitized['Fantasia'] || sanitized['Código'] || 'NOME NAO INFORMADO';
   }
 
   return sanitized;
@@ -84,13 +84,20 @@ export const supabaseService = {
               .range(start, end)
               .then(({ data, error }) => {
                 if (error) throw error;
-                const records = (data as any[])
-                  .filter(r => r['Código'] || r.id) // Remove linhas vazias corrompidas do CSV
-                  .map(r => {
-                  // Mapeamento das colunas customizadas do banco de dados do cliente
-                  const mappedId = String(r['Código'] || r.id);
-                  const mappedSocialName = String(r['Razão Social / Nome'] || r.socialName || 'NOME NAO INFORMADO');
-                  const mappedFantasyName = String(r['Fantasia'] || r['Nome Fantasia'] || r.fantasyName || '');
+                const records = (data as any[]).map(r => {
+                  if (!r) return null;
+                  const mappedId = String(r['Código'] || r.id || r['id'] || '');
+                  const mappedSocialName = String(r['Razão Social / Nome'] || r.socialName || r['social_name'] || 'NOME NAO INFORMADO');
+                  
+                  // Tentar várias combinações para a coluna Fantasia
+                  const mappedFantasyName = String(
+                    r['Fantasia'] || 
+                    r['Nome Fantasia'] || 
+                    r['fantasyName'] || 
+                    r['fantasy_name'] || 
+                    r.fantasyName || 
+                    ''
+                  );
                   
                   const days = r.daysSincePurchase || 0;
                   const calculatedAbc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
@@ -102,7 +109,7 @@ export const supabaseService = {
                     fantasyName: mappedFantasyName,
                     abc: calculatedAbc
                   } as ClientRecord;
-                });
+                }).filter(r => r !== null) as ClientRecord[];
                 loadedCount += records.length;
                 if (onProgress) onProgress(loadedCount, total);
                 return records;
@@ -134,18 +141,43 @@ export const supabaseService = {
     const CONCURRENCY = 3; 
     
     try {
+      // 0. Detectar colunas reais do banco para evitar crash (Fallback dinâmico)
+      const { data: colSample } = await client.from('base_oficial_millenium').select('*').limit(1);
+      const dbColumns = colSample && colSample.length > 0 ? Object.keys(colSample[0]) : [];
+      
+      // Procura qualquer variação de Fantasia que exista no banco
+      const fantasiaCol = ['Fantasia', 'Nome Fantasia', 'fantasyName', 'fantasy_name'].find(v => dbColumns.includes(v));
+
       const chunks = [];
       for (let i = 0; i < base_oficial_millenium.length; i += BATCH_SIZE) {
         const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
-          // Remover abc que não existe na tabela nativamente com esse nome
-          const { abc, fantasyName, id, socialName, ...rest } = c;
-          // Mapear de volta para as colunas customizadas do banco
-          return {
-            ...rest,
-            'Código': id,
-            'Razão Social / Nome': socialName,
-            'Fantasia': fantasyName || ''
+          const payload: any = {
+            'Código': String(c.id),
+            'Razão Social / Nome': String(c.socialName),
+            'cnpj': c.cnpj || '',
+            'ie': c.ie || '',
+            'city': c.city || '',
+            'state': c.state || '',
+            'address': c.address || '',
+            'neighborhood': c.neighborhood || '',
+            'cep': c.cep || '',
+            'activity': c.activity || '',
+            'group': c.group || '',
+            'lastPurchaseDate': c.lastPurchaseDate,
+            'daysSincePurchase': c.daysSincePurchase || 0,
+            'registerDate': c.registerDate,
+            'representativeName': c.representativeName || '',
+            'rep3': c.rep3 || '',
+            'supervisor': c.supervisor || '',
+            'population': c.population || 0,
+            'status': c.status || 'Ativo'
           };
+          
+          if (fantasiaCol) {
+            payload[fantasiaCol] = c.fantasyName || '';
+          }
+          
+          return payload;
         });
         chunks.push(chunk);
       }
@@ -155,10 +187,14 @@ export const supabaseService = {
         await Promise.all(batch.map(async (chunk) => {
           const ids = chunk.map(c => c['Código']);
           // Delete manual por falta de Primary Key no banco do cliente
-          await client.from('base_oficial_millenium').delete().in('Código', ids);
+          const { error: delError } = await client.from('base_oficial_millenium').delete().in('Código', ids);
+          if (delError) console.warn("Erro ao deletar (pode ser ignorado se for novo):", delError);
           
           const { error } = await client.from('base_oficial_millenium').insert(chunk);
-          if (error) throw error;
+          if (error) {
+             console.error("Erro no INSERT Supabase:", error);
+             throw error;
+          }
         }));
         
         await new Promise(resolve => setTimeout(resolve, 50));
