@@ -166,8 +166,6 @@ export const supabaseService = {
           const payload: any = {
             'Código': String(c.id),
             'Razão Social / Nome': String(c.socialName || c.id || 'NOME INDISPONÍVEL'),
-            'Fantasia': String(c.fantasyName || ''), 
-            'Nome Fantasia': String(c.fantasyName || ''), // Salvar em ambos para compatibilidade v2
             'cnpj': c.cnpj || '',
             'ie': c.ie || '',
             'city': c.city || '',
@@ -191,9 +189,12 @@ export const supabaseService = {
           if (!payload['lastPurchaseDate'] || payload['lastPurchaseDate'] === '') delete payload['lastPurchaseDate'];
           if (!payload['registerDate'] || payload['registerDate'] === '') delete payload['registerDate'];
           
-          // Fallback para outras variações se 'Fantasia' não existir no banco
-          if (!dbColumns.includes('Fantasia') && fantasiaCol) {
-            payload[fantasiaCol] = c.fantasyName || '';
+          // Mapeamento DINÂMICO da coluna de Fantasia (evita erro de coluna inexistente)
+          if (fantasiaCol) {
+            payload[fantasiaCol] = String(c.fantasyName || '');
+          } else if (dbColumns.length === 0) {
+            // Fallback se não detectou colunas (ex: tabela vazia), tenta Nome Fantasia que é o padrão atual
+            payload['Nome Fantasia'] = String(c.fantasyName || '');
           }
           
           return payload;

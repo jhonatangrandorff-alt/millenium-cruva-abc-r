@@ -181,8 +181,12 @@ export const supabaseService = {
           if (!payload['lastPurchaseDate'] || payload['lastPurchaseDate'] === '') delete payload['lastPurchaseDate'];
           if (!payload['registerDate'] || payload['registerDate'] === '') delete payload['registerDate'];
           
+          // Mapeamento DINÂMICO da coluna de Fantasia (evita erro de coluna inexistente)
           if (fantasiaCol) {
-            payload[fantasiaCol] = c.fantasyName || '';
+            payload[fantasiaCol] = String(c.fantasyName || '');
+          } else if (dbColumns.length === 0) {
+            // Fallback se não detectou colunas (ex: tabela vazia)
+            payload['Nome Fantasia'] = String(c.fantasyName || '');
           }
           
           return payload;
