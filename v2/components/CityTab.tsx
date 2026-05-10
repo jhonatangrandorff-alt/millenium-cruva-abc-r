@@ -69,7 +69,7 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return cities;
     return cities.filter(c => 
-      c.toLowerCase().includes(searchTerm.toLowerCase())
+      c.toLowerCase().startsWith(searchTerm.toLowerCase())
     );
   }, [cities, searchTerm]);
 
@@ -198,12 +198,12 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
   return (
     <div className="flex flex-col gap-6">
        {/* Header / Filters Container */}
-       <div className="flex flex-col md:flex-row gap-0 border border-gray-200 shadow-lg rounded-2xl overflow-hidden">
+       <div className="flex flex-col md:flex-row gap-0 border border-gray-200 shadow-lg rounded-2xl relative z-20">
         
         {/* Left Side: Info Panel */}
         <div className="flex-1 flex flex-col">
           {/* City Select - Searchable */}
-          <div className="flex items-center bg-blue-900 text-white p-4 relative" ref={dropdownRef}>
+          <div className="flex items-center bg-blue-900 text-white p-4 relative rounded-t-2xl md:rounded-tr-none md:rounded-tl-2xl" ref={dropdownRef}>
             <span className="font-bold w-20 text-blue-200 shrink-0">Cidade</span>
             <div className="flex-1 relative group">
               <input 
@@ -250,7 +250,7 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
               <span className="uppercase text-xs opacity-80">Habitantes</span>
               <span className="text-xl">{currentCityPop.toLocaleString('pt-BR')}</span>
             </div>
-            <div className="flex items-center bg-blue-50 text-blue-900 p-3 px-6 font-bold justify-between">
+            <div className="flex items-center bg-blue-50 text-blue-900 p-3 px-6 font-bold justify-between md:rounded-bl-2xl">
               <span className="uppercase text-xs opacity-70">Representantes Ativos</span>
               <span className="text-lg">{activeRepsCount}</span>
             </div>
@@ -258,7 +258,7 @@ const CityTab: React.FC<CityTabProps> = ({ data, onExport, onDrillDown }) => {
         </div>
 
         {/* Right Side: Date & Actions */}
-        <div className="w-full md:w-80 bg-gray-50 p-6 flex flex-col justify-center border-l border-gray-200">
+        <div className="w-full md:w-80 bg-gray-50 p-6 flex flex-col justify-center border-l border-gray-200 rounded-b-2xl md:rounded-bl-none md:rounded-r-2xl">
           <div className="font-bold text-center mb-4 text-gray-500 uppercase text-xs tracking-wider">Período da Análise</div>
           
           <div className="space-y-3">

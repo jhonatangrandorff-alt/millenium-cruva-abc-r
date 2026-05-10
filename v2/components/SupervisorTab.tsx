@@ -69,7 +69,7 @@ const SupervisorTab: React.FC<SupervisorTabProps> = ({ data, onExport, onDrillDo
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return supervisors;
     return supervisors.filter(s => 
-      (s || "").toLowerCase().includes((searchTerm || "").toLowerCase())
+      (s || "").toLowerCase().startsWith((searchTerm || "").toLowerCase())
     );
   }, [supervisors, searchTerm]);
 

@@ -292,7 +292,7 @@ const App: React.FC = () => {
 
         for (let i = 0; i < Math.min(lines.length, 30); i++) {
           const cols = parseCSVLine(lines[i], delimiter).map(c => c.trim().toLowerCase());
-          if (cols.some(c => c === 'código' || c === 'codigo' || c === 'razão social' || c === 'razao social')) {
+          if (cols.some(c => c === 'código' || c === 'codigo' || c === 'razão social' || c === 'razao social' || c === 'razão soc' || c === 'razao soc')) {
             headerIndex = i;
             cols.forEach((name, idx) => {
               if (name) colMap[name] = idx;
@@ -320,18 +320,19 @@ const App: React.FC = () => {
           if (cols.length < 3) return null;
 
           const rawId = getVal(cols, ['código', 'codigo', 'id', 'cod']);
-          const name = getVal(cols, ['razão social / nome', 'razao social / nome', 'razão social', 'razao social', 'nome', 'social']);
-          const fantasia = getVal(cols, ['nome fantasia', 'fantasia']);
+          const name = getVal(cols, ['razão social / nome', 'razao social / nome', 'razão social', 'razao social', 'razão soc', 'razao soc', 'nome', 'social']);
+          const fantasia = getVal(cols, ['nome fantasia', 'fantasia', 'nome far', 'nome fan']);
           
-          // Priorizar Nome Fantasia pois costuma ser o 'Nome de Acordo' esperado pelo usuário
-          const finalName = fantasia || name || 'NOME NAO INFORMADO';
+          // Mapeamento direto como solicitado pelo usuário
+          const finalSocialName = name || fantasia || 'NOME NAO INFORMADO';
+          const finalFantasyName = fantasia || name || 'NOME NAO INFORMADO';
 
           // Validação flexível: Se tem ID e não é uma linha de "Total" ou cabeçalho repetido
           if (!rawId || rawId.toLowerCase().includes('total') || rawId.toLowerCase() === 'código') {
             return null;
           }
 
-          const rawStatus = getVal(cols, ['situação do cliente', 'situacao do cliente', 'situação', 'status', 'situacao']);
+          const rawStatus = getVal(cols, ['situação do cliente', 'situacao do cliente', 'situação c', 'situacao c', 'situação', 'status', 'situacao']);
           let status = ClientStatus.ACTIVE;
           if (rawStatus.toLowerCase().includes('semi')) status = ClientStatus.SEMI_ACTIVE;
           else if (rawStatus.toLowerCase().includes('inativo')) status = ClientStatus.INACTIVE;
@@ -363,8 +364,8 @@ const App: React.FC = () => {
 
           return {
             id: rawId,
-            socialName: finalName,
-            fantasyName: fantasia,
+            socialName: finalSocialName,
+            fantasyName: finalFantasyName,
             cnpj: getVal(cols, ['cnpj']),
             ie: getVal(cols, ['i. e.', 'ie']),
             city: getVal(cols, ['cidade']),
@@ -372,7 +373,7 @@ const App: React.FC = () => {
             address: numero ? `${logradouro}, ${numero}` : logradouro,
             neighborhood: getVal(cols, ['bairro']),
             cep: getVal(cols, ['cep']),
-            activity: getVal(cols, ['ramo de atividade', 'ramo', 'atividade']),
+            activity: getVal(cols, ['ramo de atividade', 'ramo de a', 'ramo', 'atividade']),
             group: getVal(cols, ['grupo']),
             lastPurchaseDate: parseDate(getVal(cols, ['ult. compra', 'ultima compra', 'dt ult. compra'])),
             daysSincePurchase: daysSincePurchase,
@@ -380,7 +381,7 @@ const App: React.FC = () => {
             representativeName: standardRep,
             rep3: getVal(cols, ['rep 3', 'rep3']) || standardRep,
             supervisor: getVal(cols, ['supervisor', 'setor', 'gerente']) || 'GERAL',
-            population: parseInt(getVal(cols, ['habitantes', 'populacao']).replace(/\D/g, '') || '0', 10),
+            population: parseInt(getVal(cols, ['habitantes', 'habitante', 'populacao']).replace(/\D/g, '') || '0', 10),
             status: status,
             abc: abc
           };

@@ -16,7 +16,7 @@ export let supabase = createClient(globalUrl, globalKey);
 
 // Campos que existem na tabela 'base_oficial_millenium' do Supabase para evitar erro de coluna inexistente
 const VALID_CLIENT_COLUMNS = [
-  'Código', 'Razão Social / Nome', 'Fantasia', 'cnpj', 'ie', 'city', 'state', 
+  'Código', 'Razão Social / Nome', 'Fantasia', 'Nome Fantasia', 'cnpj', 'ie', 'city', 'state', 
   'address', 'neighborhood', 'cep', 'activity', 'group', 
   'lastPurchaseDate', 'daysSincePurchase', 'registerDate', 
   'representativeName', 'rep3', 'supervisor', 'population', 'status'
@@ -32,7 +32,7 @@ const sanitizeClient = (client: any) => {
 
   // Garantir que a Razão Social nunca seja null para evitar erro de constraint no banco
   if (!sanitized['Razão Social / Nome']) {
-    sanitized['Razão Social / Nome'] = sanitized['Fantasia'] || sanitized['Código'] || 'NOME NAO INFORMADO';
+    sanitized['Razão Social / Nome'] = sanitized['Fantasia'] || sanitized['Nome Fantasia'] || sanitized['Código'] || 'NOME NAO INFORMADO';
   }
 
   return sanitized;
@@ -47,7 +47,10 @@ export const supabaseService = {
 
   // Busca todos os clientes do Supabase
   fetchClients: async (config?: SupabaseConfig, onProgress?: (current: number, total: number) => void): Promise<ClientRecord[]> => {
-    const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
+    // CORREÇÃO: Priorizar config passada (URL fornecida no modal) sobre o cliente global
+    const client = (config?.url && config?.key) 
+      ? createClient(config.url, config.key) 
+      : supabase;
 
     if (!client) {
       console.warn('⚠️ Supabase não configurado via variáveis de ambiente. Fallback inativo.');
@@ -87,17 +90,13 @@ export const supabaseService = {
                 const records = (data as any[]).map(r => {
                   if (!r) return null;
                   const mappedId = String(r['Código'] || r.id || r['id'] || '');
-                  const mappedSocialName = String(r['Razão Social / Nome'] || r.socialName || r['social_name'] || 'NOME NAO INFORMADO');
                   
-                  // Tentar várias combinações para a coluna Fantasia
-                  const mappedFantasyName = String(
-                    r['Fantasia'] || 
-                    r['Nome Fantasia'] || 
-                    r['fantasyName'] || 
-                    r['fantasy_name'] || 
-                    r.fantasyName || 
-                    ''
-                  );
+                  // Mapeamento robusto para Razão Social e Fantasia (Suporte a nomes curtos e variações)
+                  const rawSocial = r['Razão Social / Nome'] || r['Razao Social'] || r['Razão Soc'] || r['Razao Soc'] || r.socialName || r['social_name'] || '';
+                  const rawFantasy = r['Fantasia'] || r['Nome Fantasia'] || r['Nome Far'] || r['Nome Fan'] || r.fantasyName || r['fantasy_name'] || '';
+
+                  const mappedSocialName = String(rawSocial || rawFantasy || 'NOME NAO INFORMADO');
+                  const mappedFantasyName = String(rawFantasy || rawSocial || 'NOME NAO INFORMADO');
                   
                   const days = r.daysSincePurchase || 0;
                   const calculatedAbc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
@@ -131,7 +130,10 @@ export const supabaseService = {
   },
 
   saveClients: async (config: SupabaseConfig | null, base_oficial_millenium: ClientRecord[]): Promise<void> => {
-    const client = supabase || (config?.url && config?.key ? createClient(config.url, config.key) : null);
+    // CORREÇÃO: Priorizar config passada (URL fornecida no modal) sobre o cliente global
+    const client = (config?.url && config?.key) 
+      ? createClient(config.url, config.key) 
+      : supabase;
 
     if (!client) {
       throw new Error("Não foi possível inicializar o cliente Supabase.");
@@ -156,7 +158,9 @@ export const supabaseService = {
         const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
           const payload: any = {
             'Código': String(c.id),
-            'Razão Social / Nome': String(c.socialName),
+            'Razão Social / Nome': String(c.socialName || ''),
+            'Fantasia': String(c.fantasyName || ''), 
+            'Nome Fantasia': String(c.fantasyName || ''), // Salvar em ambos para compatibilidade v2
             'cnpj': c.cnpj || '',
             'ie': c.ie || '',
             'city': c.city || '',
@@ -176,7 +180,8 @@ export const supabaseService = {
             'status': c.status || 'Ativo'
           };
           
-          if (fantasiaCol) {
+          // Fallback para outras variações se 'Fantasia' não existir no banco
+          if (!dbColumns.includes('Fantasia') && fantasiaCol) {
             payload[fantasiaCol] = c.fantasyName || '';
           }
           
