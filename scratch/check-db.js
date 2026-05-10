@@ -1,33 +1,28 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://nqrtrzfkryihlllzdlgw.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xcnRyemZrcnlpaGxsbHpkbGd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0ODEyODQsImV4cCI6MjA4ODA1NzI4NH0.al_gpeQjLms0T1op8UyhdtaN7PJAaHxWGFPIx0ZJM_8';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const url = "https://acvpejgyqondqwsjbwaa.supabase.co";
+const key = "sb_publishable_Ln6v8O62FZFOix_pjwtR2w_oEI0lF2J";
 
-async function check() {
-  console.log('Checking base_oficial_millenium...');
-  const { count, error } = await supabase
-    .from('base_oficial_millenium')
-    .select('*', { count: 'exact', head: true });
+const supabase = createClient(url, key);
 
-  if (error) {
-    console.error('Error:', error);
-  } else {
-    console.log('Total records in base_oficial_millenium:', count);
-  }
+async function inspectSchema() {
+    console.log('Inspecionando colunas da tabela base_oficial_millenium...');
+    const { data, error } = await supabase.from('base_oficial_millenium').select('*').limit(1);
 
-  console.log('Checking users...');
-  const { data: users, error: userError } = await supabase
-    .from('users')
-    .select('username, sectors');
-  
-  if (userError) {
-    console.error('User Error:', userError);
-  } else {
-    console.log('Users found:', users.length);
-    console.log('User list:', JSON.stringify(users, null, 2));
-  }
+    if (error) {
+        console.error('Erro ao buscar dados:', error);
+        return;
+    }
+
+    if (data && data.length > 0) {
+        console.log('Colunas encontradas:', Object.keys(data[0]));
+        console.log('Exemplo de registro:', data[0]);
+    } else {
+        console.log('Tabela vazia. Tentando buscar nomes de colunas via RPC ou metadados...');
+        // Fallback: tentar inserir um registro fake com colunas erradas para ver o erro e os nomes sugeridos
+        const { error: insertError } = await supabase.from('base_oficial_millenium').insert([{ fake_col: 'test' }]);
+        console.log('Dica de erro do Supabase:', insertError?.message);
+    }
 }
 
-check();
+inspectSchema();

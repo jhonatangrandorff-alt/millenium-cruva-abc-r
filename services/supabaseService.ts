@@ -145,14 +145,16 @@ export const supabaseService = {
     }
 
     // Otimização para grandes volumes (35k+)
-    const BATCH_SIZE = 500;
-    const CONCURRENCY = 2; 
+    const BATCH_SIZE = 200; // Reduzido para evitar limites de payload
+    const CONCURRENCY = 3; 
     
     console.log(`Iniciando salvamento de ${base_oficial_millenium.length} registros...`);
 
     try {
       // 0. Detectar colunas reais do banco para evitar crash (Fallback dinâmico)
-      const { data: colSample } = await client.from('base_oficial_millenium').select('*').limit(1);
+      const { data: colSample, error: colError } = await client.from('base_oficial_millenium').select('*').limit(1);
+      if (colError) console.warn('Aviso ao detectar colunas:', colError.message);
+      
       const dbColumns = colSample && colSample.length > 0 ? Object.keys(colSample[0]) : [];
       
       // Procura qualquer variação de Fantasia que exista no banco
@@ -163,7 +165,7 @@ export const supabaseService = {
         const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
           const payload: any = {
             'Código': String(c.id),
-            'Razão Social / Nome': String(c.socialName || ''),
+            'Razão Social / Nome': String(c.socialName || c.id || 'NOME INDISPONÍVEL'),
             'Fantasia': String(c.fantasyName || ''), 
             'Nome Fantasia': String(c.fantasyName || ''), // Salvar em ambos para compatibilidade v2
             'cnpj': c.cnpj || '',
@@ -184,6 +186,10 @@ export const supabaseService = {
             'population': c.population || 0,
             'status': c.status || 'Ativo'
           };
+
+          // Validar datas para evitar erro de formato no Postgres
+          if (!payload['lastPurchaseDate'] || payload['lastPurchaseDate'] === '') delete payload['lastPurchaseDate'];
+          if (!payload['registerDate'] || payload['registerDate'] === '') delete payload['registerDate'];
           
           // Fallback para outras variações se 'Fantasia' não existir no banco
           if (!dbColumns.includes('Fantasia') && fantasiaCol) {
@@ -208,7 +214,7 @@ export const supabaseService = {
           const { error } = await client.from('base_oficial_millenium').insert(chunk);
           if (error) {
              console.error("ERRO CRÍTICO NO INSERT SUPABASE:", error);
-             throw new Error(`Falha ao inserir lote: ${error.message} (Dica: Verifique se as colunas no Supabase aceitam nulos)`);
+             throw new Error(`Erro na gravação (Lote ${i/BATCH_SIZE}): ${error.message} - Detalhes: ${error.details || 'sem detalhes'}`);
           }
         }));
         
