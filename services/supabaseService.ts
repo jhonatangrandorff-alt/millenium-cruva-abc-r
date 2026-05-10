@@ -38,6 +38,11 @@ const sanitizeClient = (client: any) => {
   return sanitized;
 };
 
+const cleanName = (name: string) => {
+  if (!name) return '';
+  return String(name).replace(/^[\d./-]{5,}\s+/, '').trim();
+};
+
 export const supabaseService = {
   updateConfig: (url: string, key: string) => {
     if (url && key) {
@@ -92,8 +97,8 @@ export const supabaseService = {
                   const mappedId = String(r['Código'] || r.id || r['id'] || '');
                   
                   // Mapeamento robusto para Razão Social e Fantasia (Suporte a nomes curtos e variações)
-                  const rawSocial = r['Razão Social / Nome'] || r['Razao Social'] || r['Razão Soc'] || r['Razao Soc'] || r.socialName || r['social_name'] || '';
-                  const rawFantasy = r['Fantasia'] || r['Nome Fantasia'] || r['Nome Far'] || r['Nome Fan'] || r.fantasyName || r['fantasy_name'] || '';
+                  const rawSocial = cleanName(r['Razão Social / Nome'] || r['Razao Social'] || r['Razão Soc'] || r['Razao Soc'] || r.socialName || r['social_name'] || '');
+                  const rawFantasy = cleanName(r['Fantasia'] || r['Nome Fantasia'] || r['Nome Far'] || r['Nome Fan'] || r.fantasyName || r['fantasy_name'] || '');
 
                   const mappedSocialName = String(rawSocial || rawFantasy || 'NOME NAO INFORMADO');
                   const mappedFantasyName = String(rawFantasy || rawSocial || 'NOME NAO INFORMADO');

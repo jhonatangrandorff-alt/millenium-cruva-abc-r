@@ -261,6 +261,13 @@ const App: React.FC = () => {
     return parts;
   };
 
+  const cleanClientName = (name: string) => {
+    if (!name) return '';
+    // Remove prefixos numéricos (CNPJ/CPF truncado) que aparecem no início do nome
+    // Ex: "05.153.616 WEBERT..." -> "WEBERT..."
+    return name.replace(/^[\d./-]{5,}\s+/, '').trim();
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -320,8 +327,8 @@ const App: React.FC = () => {
           if (cols.length < 3) return null;
 
           const rawId = getVal(cols, ['código', 'codigo', 'id', 'cod']);
-          const name = getVal(cols, ['razão social / nome', 'razao social / nome', 'razão social', 'razao social', 'razão soc', 'razao soc', 'nome', 'social']);
-          const fantasia = getVal(cols, ['nome fantasia', 'fantasia', 'nome far', 'nome fan']);
+          const name = cleanClientName(getVal(cols, ['razão social / nome', 'razao social / nome', 'razão social', 'razao social', 'razão soc', 'razao soc', 'nome', 'social']));
+          const fantasia = cleanClientName(getVal(cols, ['nome fantasia', 'fantasia', 'nome far', 'nome fan']));
           
           // Mapeamento direto como solicitado pelo usuário
           const finalSocialName = name || fantasia || 'NOME NAO INFORMADO';
