@@ -261,11 +261,11 @@ const App: React.FC = () => {
     return parts;
   };
 
-  const cleanClientName = (name: string) => {
-    if (!name) return '';
+  const cleanClientName = (name: any) => {
+    if (name === null || name === undefined || String(name).toLowerCase() === 'null') return '';
     // Remove prefixos numéricos (CNPJ/CPF truncado) que aparecem no início do nome
     // Ex: "05.153.616 WEBERT..." -> "WEBERT..."
-    return name.replace(/^[\d./-]{5,}\s+/, '').trim();
+    return String(name).replace(/^[\d./\s-]{5,}\s+/, '').trim();
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

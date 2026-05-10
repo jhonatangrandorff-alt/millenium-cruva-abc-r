@@ -38,9 +38,9 @@ const sanitizeClient = (client: any) => {
   return sanitized;
 };
 
-const cleanName = (name: string) => {
-  if (!name) return '';
-  return String(name).replace(/^[\d./-]{5,}\s+/, '').trim();
+const cleanName = (name: any) => {
+  if (name === null || name === undefined || String(name).toLowerCase() === 'null') return '';
+  return String(name).replace(/^[\d./\s-]{5,}\s+/, '').trim();
 };
 
 export const supabaseService = {
@@ -100,8 +100,8 @@ export const supabaseService = {
                   const rawSocial = cleanName(r['Razão Social / Nome'] || r['Razao Social'] || r['Razão Soc'] || r['Razao Soc'] || r.socialName || r['social_name'] || '');
                   const rawFantasy = cleanName(r['Fantasia'] || r['Nome Fantasia'] || r['Nome Far'] || r['Nome Fan'] || r.fantasyName || r['fantasy_name'] || '');
 
-                  const mappedSocialName = String(rawSocial || rawFantasy || 'NOME NAO INFORMADO');
-                  const mappedFantasyName = String(rawFantasy || rawSocial || 'NOME NAO INFORMADO');
+                  const mappedSocialName = rawSocial || rawFantasy || 'NOME NAO INFORMADO';
+                  const mappedFantasyName = rawFantasy || rawSocial || 'NOME NAO INFORMADO';
                   
                   const days = r.daysSincePurchase || 0;
                   const calculatedAbc = days <= 30 ? 'A' : (days <= 90 ? 'B' : 'C');
