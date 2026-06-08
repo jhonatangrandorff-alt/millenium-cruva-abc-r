@@ -312,10 +312,22 @@ const App: React.FC = () => {
         }
 
         const getVal = (cols: string[], possibleNames: string[]) => {
+          // 1. Tenta correspondência exata
           for (const name of possibleNames) {
             const idx = colMap[name.toLowerCase()];
             if (idx !== undefined && cols[idx] !== undefined) {
               return cols[idx].trim().replace(/^"|"$/g, '').trim();
+            }
+          }
+          // 2. Tenta correspondência por conter a palavra chave
+          const keys = Object.keys(colMap);
+          for (const name of possibleNames) {
+            const matchedKey = keys.find(k => k.includes(name.toLowerCase()));
+            if (matchedKey) {
+              const idx = colMap[matchedKey];
+              if (idx !== undefined && cols[idx] !== undefined) {
+                return cols[idx].trim().replace(/^"|"$/g, '').trim();
+              }
             }
           }
           return '';
