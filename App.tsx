@@ -362,7 +362,25 @@ const App: React.FC = () => {
           const logradouro = getVal(cols, ['endereço (logradouro)', 'endereco', 'logradouro', 'rua', 'endereco (logradouro)']);
           const numero = getVal(cols, ['número', 'numero', 'nº']);
 
-          const daysSincePurchase = parseInt(getVal(cols, ['dias']).replace(/\D/g, '') || '0', 10);
+          const lastPurchaseDateStr = parseDate(getVal(cols, ['ult. compra', 'ultima compra', 'dt ult. compra']));
+
+          let daysSincePurchase = parseInt(getVal(cols, ['dias', 'dias sem comprar', 'dias de inatividade', 'dias sem compra', 'dias atraso', 'dias de atraso']).replace(/\D/g, '') || '0', 10);
+          
+          if (daysSincePurchase === 0 && lastPurchaseDateStr) {
+            try {
+              const lastDate = new Date(lastPurchaseDateStr + 'T12:00:00');
+              const todayDate = new Date();
+              if (lastDate.getTime() < todayDate.getTime()) {
+                const diffTime = Math.abs(todayDate.getTime() - lastDate.getTime());
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                if (!isNaN(diffDays)) {
+                  daysSincePurchase = diffDays;
+                }
+              }
+            } catch (e) {
+              console.error("Erro ao calcular dias a partir da data de compra:", e);
+            }
+          }
           
           // Curva ABC
           let abc: 'A' | 'B' | 'C' = 'C';
@@ -382,7 +400,7 @@ const App: React.FC = () => {
             cep: getVal(cols, ['cep']),
             activity: getVal(cols, ['ramo de atividade', 'ramo de a', 'ramo', 'atividade']),
             group: getVal(cols, ['grupo']),
-            lastPurchaseDate: parseDate(getVal(cols, ['ult. compra', 'ultima compra', 'dt ult. compra'])),
+            lastPurchaseDate: lastPurchaseDateStr,
             daysSincePurchase: daysSincePurchase,
             registerDate: parseDate(getVal(cols, ['cadastro', 'dt. cadastro'])),
             representativeName: standardRep,

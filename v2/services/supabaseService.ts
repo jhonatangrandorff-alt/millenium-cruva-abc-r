@@ -87,6 +87,8 @@ export const supabaseService = {
                 if (error) throw error;
                 const records = (data as any[]).map(r => {
                   if (!r) return null;
+                  const mappedId = String(r['Código'] || r.id || r['id'] || '');
+                  
                   // Mapeamento robusto para Razão Social e Fantasia (Suporte a nomes curtos e variações)
                   const rawSocial = cleanName(r['Razão Social / Nome'] || r['Razao Social'] || r['Razão Soc'] || r['Razao Soc'] || r.socialName || r['social_name'] || '');
                   const rawFantasy = cleanName(r['Nome Fantasia'] || r['Fantasia'] || r['Nome Far'] || r['Nome Fan'] || r.fantasyName || r['fantasy_name'] || '');
