@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserAccount } from '../types';
-import { supabaseService } from '../services/supabaseService';
+import { supabaseService, supabase } from '../services/supabaseService';
 
 interface AdminSettingsModalProps {
   isOpen: boolean;
@@ -35,6 +35,14 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [newSectors, setNewSectors] = useState<string[]>(['GERAL']);
 
+  // Edit user state
+  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [sectorSearch, setSectorSearch] = useState('');
+
+  const filteredSupervisors = supervisors
+    .filter(s => s !== 'GERAL' && s !== '')
+    .filter(s => s.toLowerCase().includes(sectorSearch.toLowerCase()));
+
   const handleAuth = (e: React.FormEvent) => {
     e.preventDefault();
     if (adminPass === 'admin123') {
@@ -57,36 +65,70 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
     });
   };
 
-  const addUser = async () => {
+  const startEdit = (user: UserAccount) => {
+    setEditingUser(user);
+    setNewUsername(user.username);
+    setNewPassword(user.password);
+    setNewSectors(user.sectors || ['GERAL']);
+  };
+
+  const cancelEdit = () => {
+    setEditingUser(null);
+    setNewUsername('');
+    setNewPassword('');
+    setNewSectors(['GERAL']);
+  };
+
+  const saveUserChanges = async () => {
     if (!newUsername || !newPassword) {
       alert('Preencha o usuário e a senha.');
       return;
     }
-    if (accounts.some(a => a.username === newUsername)) {
-      alert('Este usuário já existe.');
-      return;
-    }
-    const newUser: UserAccount = {
-      id: Date.now().toString(),
-      username: newUsername,
-      password: newPassword,
-      sectors: newSectors
-    };
 
-    try {
-      // Save directly to Supabase
-      await supabaseService.saveUser(null, newUser);
+    if (editingUser) {
+      const updatedUser: UserAccount = {
+        ...editingUser,
+        username: newUsername,
+        password: newPassword,
+        sectors: newSectors
+      };
 
-      setAccounts(prev => {
-        const next = [...prev, newUser];
-        onSave(next);
-        return next;
-      });
-      setNewUsername('');
-      setNewPassword('');
-      setNewSectors(['GERAL']);
-    } catch (err: any) {
-      alert('Erro ao salvar usuário na nuvem: ' + err.message);
+      try {
+        await supabaseService.saveUser(null, updatedUser);
+        setAccounts(prev => {
+          const next = prev.map(a => a.id === editingUser.id ? updatedUser : a);
+          onSave(next);
+          return next;
+        });
+        cancelEdit();
+      } catch (err: any) {
+        alert('Erro ao atualizar usuário na nuvem: ' + err.message);
+      }
+    } else {
+      if (accounts.some(a => a.username === newUsername)) {
+        alert('Este usuário já existe.');
+        return;
+      }
+      const newUser: UserAccount = {
+        id: Date.now().toString(),
+        username: newUsername,
+        password: newPassword,
+        sectors: newSectors
+      };
+
+      try {
+        await supabaseService.saveUser(null, newUser);
+        setAccounts(prev => {
+          const next = [...prev, newUser];
+          onSave(next);
+          return next;
+        });
+        setNewUsername('');
+        setNewPassword('');
+        setNewSectors(['GERAL']);
+      } catch (err: any) {
+        alert('Erro ao salvar usuário na nuvem: ' + err.message);
+      }
     }
   };
 
@@ -111,6 +153,24 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+      <style>{`
+        .custom-scrollbar-visible::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        .custom-scrollbar-visible::-webkit-scrollbar-track {
+          background: #f8fafc;
+          border-radius: 6px;
+        }
+        .custom-scrollbar-visible::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 6px;
+          border: 2px solid #f8fafc;
+        }
+        .custom-scrollbar-visible::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="bg-blue-900 text-white p-6 font-bold flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -143,9 +203,29 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
         ) : (
           <>
             <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-              <div className="mb-8 p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
-                  <i className="fas fa-user-plus"></i> Cadastrar Novo Usuário
+              <div className={`mb-8 p-6 ${editingUser ? 'bg-yellow-50/50 border-yellow-200' : 'bg-blue-50 border-blue-100'} rounded-2xl border`}>
+                <h4 className="font-bold text-blue-900 mb-4 flex items-center justify-between text-left">
+                  <span className="flex items-center gap-2">
+                    {editingUser ? (
+                      <>
+                        <i className="fas fa-user-edit text-yellow-600"></i>
+                        <span>Editar Usuário: <span className="underline">{editingUser.username}</span></span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-user-plus"></i>
+                        <span>Cadastrar Novo Usuário</span>
+                      </>
+                    )}
+                  </span>
+                  {editingUser && (
+                    <button 
+                      onClick={cancelEdit}
+                      className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded-lg font-bold transition-all"
+                    >
+                      Cancelar Edição
+                    </button>
+                  )}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <input
@@ -153,7 +233,8 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                     value={newUsername}
                     onChange={e => setNewUsername(e.target.value)}
                     placeholder="Usuário"
-                    className="p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={!!editingUser}
+                    className={`p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 ${editingUser ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : ''}`}
                   />
                   <input
                     type="password"
@@ -165,15 +246,37 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-xs font-bold text-blue-900 uppercase mb-2">Acesso aos Setores (Selecione um ou mais)</label>
-                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 bg-white border rounded-xl">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+                    <label className="text-xs font-bold text-blue-900 uppercase">
+                      Acesso aos Setores (Selecione um ou mais)
+                    </label>
+                    <div className="relative w-full md:w-48">
+                      <input
+                        type="text"
+                        value={sectorSearch}
+                        onChange={e => setSectorSearch(e.target.value)}
+                        placeholder="Buscar setor..."
+                        className="w-full text-xs p-1.5 pl-6 border rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <i className="fas fa-search absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                      {sectorSearch && (
+                        <button 
+                          onClick={() => setSectorSearch('')} 
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-[10px]"
+                        >
+                          <i className="fas fa-times-circle"></i>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto p-2.5 bg-white border rounded-xl custom-scrollbar-visible">
                     <button
                       onClick={() => toggleSector('GERAL')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${newSectors.includes('GERAL') ? 'bg-blue-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
                     >
                       GERAL (Todos)
                     </button>
-                    {supervisors.filter(s => s !== 'GERAL' && s !== '').map(s => (
+                    {filteredSupervisors.map(s => (
                       <button
                         key={s}
                         onClick={() => toggleSector(s)}
@@ -182,14 +285,17 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                         {s}
                       </button>
                     ))}
+                    {filteredSupervisors.length === 0 && sectorSearch && (
+                      <p className="text-[11px] text-gray-400 p-2 w-full text-center">Nenhum setor encontrado com "{sectorSearch}"</p>
+                    )}
                   </div>
                 </div>
 
                 <button
-                  onClick={addUser}
-                  className="mt-4 w-full bg-blue-900 text-white py-3 rounded-xl font-bold hover:bg-blue-800 transition-all"
+                  onClick={saveUserChanges}
+                  className={`mt-4 w-full ${editingUser ? 'bg-yellow-600 hover:bg-yellow-700 font-bold' : 'bg-blue-900 hover:bg-blue-800'} text-white py-3 rounded-xl font-bold transition-all`}
                 >
-                  Adicionar Usuário
+                  {editingUser ? 'Salvar Alterações' : 'Adicionar Usuário'}
                 </button>
               </div>
 
@@ -200,8 +306,8 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                 ) : (
                   accounts.map((acc) => (
                     <div key={acc.id} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-md transition-shadow">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-blue-900">
+                      <div className="flex items-center gap-4 text-left">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-blue-900 shrink-0">
                           <i className="fas fa-user"></i>
                         </div>
                         <div>
@@ -213,8 +319,15 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-xs font-mono bg-gray-50 px-2 py-1 rounded border text-gray-400">••••••</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs font-mono bg-gray-50 px-2 py-1 rounded border text-gray-400 hidden sm:inline">••••••</span>
+                        <button
+                          onClick={() => startEdit(acc)}
+                          className="text-blue-500 hover:text-blue-700 p-2 transition-colors"
+                          title="Editar Usuário"
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
                         <button
                           onClick={() => removeUser(acc.id)}
                           className="text-red-400 hover:text-red-600 p-2 transition-colors"
@@ -237,10 +350,10 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                   onClick={async () => {
                     if (confirm("TEM CERTEZA? Isso apagará todos os clientes da nuvem permanentemente.")) {
                       try {
-                        const { error } = await (supabaseService as any).supabase
+                        const { error } = await supabase
                           .from('base_oficial_millenium')
                           .delete()
-                          .neq('id', '0'); 
+                          .neq('Código', 'FORCAR_DELETE_TOTAL_000'); 
                         if (error) throw error;
                         alert("Base de dados limpa com sucesso! Reiniciando...");
                         window.location.reload();
@@ -272,3 +385,4 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
 };
 
 export default AdminSettingsModal;
+

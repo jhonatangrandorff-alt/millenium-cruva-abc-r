@@ -185,9 +185,18 @@ export const supabaseService = {
             'status': c.status || 'Ativo'
           };
 
+          const isValidDate = (dateStr: any) => {
+            if (!dateStr || typeof dateStr !== 'string') return false;
+            const reg = /^\d{4}-\d{2}-\d{2}$/;
+            if (!reg.test(dateStr)) return false;
+            const [y, m, d] = dateStr.split('-').map(Number);
+            if (y === 0 || m === 0 || m > 12 || d === 0 || d > 31) return false;
+            return true;
+          };
+
           // Validar datas para evitar erro de formato no Postgres
-          if (!payload['lastPurchaseDate'] || payload['lastPurchaseDate'] === '') delete payload['lastPurchaseDate'];
-          if (!payload['registerDate'] || payload['registerDate'] === '') delete payload['registerDate'];
+          if (!isValidDate(payload['lastPurchaseDate'])) delete payload['lastPurchaseDate'];
+          if (!isValidDate(payload['registerDate'])) delete payload['registerDate'];
           
           // Mapeamento DINÂMICO da coluna de Fantasia (evita erro de coluna inexistente)
           if (fantasiaCol) {
