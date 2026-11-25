@@ -9,6 +9,7 @@ interface AdminSettingsModalProps {
   supervisors: string[];
   userAccounts: UserAccount[];
   onSave: (accounts: UserAccount[]) => void;
+  onOpenGptModal?: () => void;
 }
 
 const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
@@ -16,7 +17,8 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
   onClose,
   supervisors,
   userAccounts,
-  onSave
+  onSave,
+  onOpenGptModal
 }) => {
   const [accounts, setAccounts] = useState<UserAccount[]>(userAccounts);
   useEffect(() => {
@@ -338,6 +340,26 @@ const AdminSettingsModal: React.FC<AdminSettingsModalProps> = ({
                       </div>
                     </div>
                   ))
+                )}
+              </div>
+
+              <div className="mt-6 p-5 bg-emerald-50 rounded-2xl border border-emerald-200 mx-2 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-emerald-900 text-sm flex items-center gap-2">
+                    <i className="fas fa-robot text-emerald-600"></i> Integração com ChatGPT
+                  </h4>
+                  <p className="text-xs text-emerald-700">Conecte o ChatGPT (Custom GPT) ao sistema via API e Token.</p>
+                </div>
+                {onOpenGptModal && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenGptModal();
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                  >
+                    <i className="fas fa-external-link-alt"></i> Ver Token e URL
+                  </button>
                 )}
               </div>
 

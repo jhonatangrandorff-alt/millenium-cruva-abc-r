@@ -6,6 +6,7 @@ import SupervisorTab from './components/SupervisorTab';
 import ClientListModal from './components/ClientListModal';
 import Login from './components/Login';
 import AdminSettingsModal from './components/AdminSettingsModal';
+import GptIntegrationModal from './components/GptIntegrationModal';
 import { MOCK_DATA } from './services/mockData';
 import { dbService } from './services/database';
 import { supabaseService, SupabaseConfig } from './services/supabaseService';
@@ -96,6 +97,7 @@ const App: React.FC = () => {
   }, []);
 
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showGptModal, setShowGptModal] = useState(false);
   const [isDataSaved, setIsDataSaved] = useState(true);
 
   useEffect(() => {
@@ -334,7 +336,7 @@ const App: React.FC = () => {
           return '';
         };
 
-        const newRecords: ClientRecord[] = lines.slice(headerIndex + 1).map((line) => {
+        const rawRecords: ClientRecord[] = lines.slice(headerIndex + 1).map((line) => {
           const cols = parseCSVLine(line, delimiter);
           if (cols.length < 3) return null;
 
@@ -424,15 +426,24 @@ const App: React.FC = () => {
           };
         }).filter(r => r !== null) as ClientRecord[];
 
+        // Deduplicação preventiva por ID/Código
+        const recordMap = new Map<string, ClientRecord>();
+        rawRecords.forEach(r => {
+          if (r && r.id) recordMap.set(String(r.id).trim(), r);
+        });
+        const newRecords = Array.from(recordMap.values());
+
         if (newRecords.length > 0) {
           await dbService.saveClients(newRecords);
           setClientData(newRecords);
 
           let cloudSyncSuccess = false;
           try {
-            setLoadingMsg(`Enviando ${newRecords.length} registros para a Nuvem Master...`);
+            setLoadingMsg(`Enviando ${newRecords.length.toLocaleString('pt-BR')} registros para a Nuvem Master...`);
             setIsLoading(true);
-            await supabaseService.saveClients(sbConfig, newRecords);
+            await supabaseService.saveClients(sbConfig, newRecords, (_current, _total, msg) => {
+              if (msg) setLoadingMsg(msg);
+            }, true);
             setDataSource('SUPABASE');
             cloudSyncSuccess = true;
           } catch (e: any) {
@@ -446,7 +457,7 @@ const App: React.FC = () => {
           }
 
           if (cloudSyncSuccess) {
-            alert(`SUCESSO GLOBAL: ${newRecords.length} clientes sincronizados na NUVEM. Agora todos os usuários verão estes dados ao atualizar a página.`);
+            alert(`SUCESSO GLOBAL: ${newRecords.length.toLocaleString('pt-BR')} clientes sincronizados na NUVEM (Base antiga substituída pelos dados atuais). Agora todos os usuários verão estes dados ao atualizar a página.`);
           }
         } else {
           alert('Nenhum dado válido de cliente encontrado no arquivo.');
@@ -488,14 +499,16 @@ const App: React.FC = () => {
       return;
     }
 
-    if (confirm(`Deseja gravar agora os ${clientData.length} registros permanentemente na Nuvem Master?`)) {
+    if (confirm(`Deseja gravar agora os ${clientData.length.toLocaleString('pt-BR')} registros permanentemente na Nuvem Master (substituindo a base antiga)?`)) {
       setIsLoading(true);
-      setLoadingMsg(`Gravando ${clientData.length} registros...`);
+      setLoadingMsg(`Gravando ${clientData.length.toLocaleString('pt-BR')} registros...`);
       try {
-        await supabaseService.saveClients(sbConfig, clientData);
+        await supabaseService.saveClients(sbConfig, clientData, (_current, _total, msg) => {
+          if (msg) setLoadingMsg(msg);
+        }, true);
         setDataSource('SUPABASE');
         setIsDataSaved(true);
-        alert("SUCESSO: Todos os dados foram gravados permanentemente na Nuvem!");
+        alert("SUCESSO: Todos os dados foram gravados permanentemente na Nuvem e a base antiga foi atualizada!");
       } catch (e: any) {
         console.error("Erro no Sync Manual:", e);
         setIsDataSaved(false);
@@ -523,6 +536,11 @@ const App: React.FC = () => {
             setUserAccounts(newAccounts);
             localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(newAccounts));
           }}
+          onOpenGptModal={() => setShowGptModal(true)}
+        />
+        <GptIntegrationModal
+          isOpen={showGptModal}
+          onClose={() => setShowGptModal(false)}
         />
       </>
     );
@@ -539,6 +557,13 @@ const App: React.FC = () => {
         <span className="bg-white/20 px-2 py-0.5 rounded flex items-center gap-2">
           <i className="fas fa-user text-[10px]"></i> {userName} ({userSectors?.includes('GERAL') ? 'GERAL' : userSectors?.join(', ')})
         </span>
+        <button
+          onClick={() => setShowGptModal(true)}
+          className="bg-emerald-700/80 hover:bg-emerald-600 px-2.5 py-0.5 rounded flex items-center gap-1.5 transition-colors font-medium border border-emerald-400/30"
+          title="Conectar com o ChatGPT via API e Token"
+        >
+          <i className="fas fa-robot text-xs text-emerald-300"></i> API ChatGPT
+        </button>
         <button onClick={() => setShowAdminModal(true)} className="hover:text-yellow-400 transition-colors">
           <i className="fas fa-cog"></i> Config
         </button>
@@ -565,6 +590,12 @@ const App: React.FC = () => {
           setUserAccounts(newAccounts);
           localStorage.setItem(USER_ACCOUNTS_KEY, JSON.stringify(newAccounts));
         }}
+        onOpenGptModal={() => setShowGptModal(true)}
+      />
+
+      <GptIntegrationModal
+        isOpen={showGptModal}
+        onClose={() => setShowGptModal(false)}
       />
 
 

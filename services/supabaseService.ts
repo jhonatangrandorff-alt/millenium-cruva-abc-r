@@ -22,6 +22,7 @@ const VALID_CLIENT_COLUMNS = [
   'representativeName', 'rep3', 'supervisor', 'population', 'status'
 ];
 
+// @ts-ignore
 const sanitizeClient = (client: any) => {
   const sanitized: any = {};
   VALID_CLIENT_COLUMNS.forEach(col => {
@@ -134,7 +135,12 @@ export const supabaseService = {
     }
   },
 
-  saveClients: async (config: SupabaseConfig | null, base_oficial_millenium: ClientRecord[]): Promise<void> => {
+  saveClients: async (
+    config: SupabaseConfig | null,
+    base_oficial_millenium: ClientRecord[],
+    onProgress?: (current: number, total: number, message?: string) => void,
+    clearBeforeSave: boolean = true
+  ): Promise<void> => {
     // CORREÇÃO: Priorizar config passada (URL fornecida no modal) sobre o cliente global
     const client = (config?.url && config?.key) 
       ? createClient(config.url, config.key) 
@@ -144,14 +150,32 @@ export const supabaseService = {
       throw new Error("Não foi possível inicializar o cliente Supabase.");
     }
 
-    // Otimização para grandes volumes (35k+)
-    const BATCH_SIZE = 200; // Reduzido para evitar limites de payload
-    const CONCURRENCY = 3; 
-    
-    console.log(`Iniciando salvamento de ${base_oficial_millenium.length} registros...`);
+    // 1. Deduplicação preventiva por 'Código' para evitar erros 23505 (PK conflict)
+    const clientMap = new Map<string, ClientRecord>();
+    base_oficial_millenium.forEach(c => {
+      if (c && c.id) {
+        clientMap.set(String(c.id).trim(), c);
+      }
+    });
+    const uniqueClients = Array.from(clientMap.values());
+
+    console.log(`Iniciando salvamento de ${uniqueClients.length} registros (Deduplicados de ${base_oficial_millenium.length})...`);
 
     try {
-      // 0. Detectar colunas reais do banco para evitar crash (Fallback dinâmico)
+      // 2. Limpeza total da tabela antiga para garantir SOBRESCRITA limpa
+      if (clearBeforeSave) {
+        console.log("Realizando limpeza prévia da tabela para sobrescrita total...");
+        if (onProgress) onProgress(0, uniqueClients.length, "Limpando base antiga da nuvem...");
+        const { error: clearErr } = await client
+          .from('base_oficial_millenium')
+          .delete()
+          .neq('Código', 'FORCAR_DELETE_TOTAL_000');
+        if (clearErr) {
+          console.warn("Aviso ao limpar base antiga da nuvem:", clearErr.message);
+        }
+      }
+
+      // 3. Detectar colunas reais do banco para evitar crash (Fallback dinâmico)
       const { data: colSample, error: colError } = await client.from('base_oficial_millenium').select('*').limit(1);
       if (colError) console.warn('Aviso ao detectar colunas:', colError.message);
       
@@ -160,9 +184,10 @@ export const supabaseService = {
       // Procura qualquer variação de Fantasia que exista no banco
       const fantasiaCol = ['Fantasia', 'Nome Fantasia', 'fantasyName', 'fantasy_name'].find(v => dbColumns.includes(v));
 
+      const BATCH_SIZE = 250;
       const chunks = [];
-      for (let i = 0; i < base_oficial_millenium.length; i += BATCH_SIZE) {
-        const chunk = base_oficial_millenium.slice(i, i + BATCH_SIZE).map(c => {
+      for (let i = 0; i < uniqueClients.length; i += BATCH_SIZE) {
+        const chunk = uniqueClients.slice(i, i + BATCH_SIZE).map(c => {
           const payload: any = {
             'Código': String(c.id),
             'Razão Social / Nome': String(c.socialName || c.id || 'NOME INDISPONÍVEL'),
@@ -202,7 +227,6 @@ export const supabaseService = {
           if (fantasiaCol) {
             payload[fantasiaCol] = String(c.fantasyName || '');
           } else if (dbColumns.length === 0) {
-            // Fallback se não detectou colunas (ex: tabela vazia), tenta Nome Fantasia que é o padrão atual
             payload['Nome Fantasia'] = String(c.fantasyName || '');
           }
           
@@ -211,25 +235,33 @@ export const supabaseService = {
         chunks.push(chunk);
       }
 
-      for (let i = 0; i < chunks.length; i += CONCURRENCY) {
-        const batch = chunks.slice(i, i + CONCURRENCY);
-        await Promise.all(batch.map(async (chunk) => {
-          const ids = chunk.map(c => c['Código']);
-          
-          // Delete manual por falta de Primary Key no banco do cliente
-          // Isso garante que não haverá duplicatas se o ID já existir
-          const { error: delError } = await client.from('base_oficial_millenium').delete().in('Código', ids);
-          if (delError) console.warn("Aviso no Delete:", delError.message);
-          
-          const { error } = await client.from('base_oficial_millenium').insert(chunk);
-          if (error) {
-             console.error("ERRO CRÍTICO NO INSERT SUPABASE:", error);
-             throw new Error(`Erro na gravação (Lote ${i/BATCH_SIZE}): ${error.message} - Detalhes: ${error.details || 'sem detalhes'}`);
-          }
-        }));
+      let savedCount = 0;
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
         
-        // Pequena pausa para o Supabase processar sem atingir limites
-        await new Promise(resolve => setTimeout(resolve, 100));
+        const { error } = await client.from('base_oficial_millenium').insert(chunk);
+        
+        if (error) {
+          console.warn(`Erro no insert simples (Lote ${i + 1}/${chunks.length}): ${error.message}. Tentando fallback delete + insert...`);
+          const ids = chunk.map(c => c['Código']);
+          await client.from('base_oficial_millenium').delete().in('Código', ids);
+          const { error: insErr } = await client.from('base_oficial_millenium').insert(chunk);
+          if (insErr) {
+             console.error("ERRO CRÍTICO NO INSERT SUPABASE:", insErr);
+             throw new Error(`Erro na gravação (Lote ${i + 1}/${chunks.length}): ${insErr.message} - Detalhes: ${insErr.details || 'sem detalhes'}`);
+          }
+        }
+
+        savedCount += chunk.length;
+        if (onProgress) {
+          onProgress(
+            savedCount,
+            uniqueClients.length,
+            `Enviando para a Nuvem Master: ${savedCount.toLocaleString('pt-BR')} de ${uniqueClients.length.toLocaleString('pt-BR')} registros...`
+          );
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
       console.log("Salvamento concluído com sucesso.");
     } catch (error: any) {
