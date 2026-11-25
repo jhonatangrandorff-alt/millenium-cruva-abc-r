@@ -1,5 +1,5 @@
-import { validateApiToken, applyCorsHeaders } from './_lib/auth';
-import { fetchCitiesAggregated } from './_lib/supabase';
+import { validateApiToken, applyCorsHeaders } from './_lib/auth.js';
+import { fetchCitiesAggregated } from './_lib/supabase.js';
 
 export default async function handler(req: any, res: any) {
   applyCorsHeaders(res);
