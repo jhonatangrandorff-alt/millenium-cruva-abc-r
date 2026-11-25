@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://acvpejgyqondqwsjbwaa.supabase.co';
-const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || 'sb_publishable_Ln6v8O62FZFOix_pjwtR2w_oEI0lF2J';
+// Conexão Master v5 blindada (Ignora variáveis desatualizadas da Vercel)
+const SUPABASE_URL = 'https://acvpejgyqondqwsjbwaa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Ln6v8O62FZFOix_pjwtR2w_oEI0lF2J';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
